@@ -1,6 +1,6 @@
-import cbas.Ast.Expressions
-import cbas.Parser.BindingPower
-import cbas.Parser.Lookups
+import cbas.Ast.Expressions as EXPRESSION
+import cbas.Parser.BindingPower as BINDINGPOWER
+import cbas.Parser.Lookups as LOOKUPS
 
 class StatementParser():
     
@@ -12,12 +12,12 @@ class StatementParser():
         parser.log("start:parseStatement ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
         tokenType = parser.currentTokenType
 
-        if tokenType in cbas.Parser.Lookups.statement:
+        if tokenType in LOOKUPS.Lookups.statement:
             statementFunction = cbas.Parser.Lookups.statement[tokenType]
             parser.log("end:parseStatement", "debug" )
             return statementFunction()
 
-        expression = cbas.Ast.Expressions.ExpressionParser.parseExpression( parser, 0)
+        expression = EXPRESSION.ExpressionParser.parseExpression( parser, 0)
         #p.expect(TokenTypes.SEMICOLON)
 
         parser.log("end:parseStatement", "debug" )

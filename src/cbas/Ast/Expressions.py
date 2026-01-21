@@ -1,6 +1,6 @@
-import cbas.Lexer.TokenTypes as TokenTypes
-import cbas.Parser.Lookups as Lookups
-import cbas.Parser.BindingPower as BindingPower
+import cbas.Lexer.TokenTypes as TT
+import cbas.Parser.Lookups as LU
+import cbas.Parser.BindingPower as BP
 
 class ExpressionParser():
     
@@ -12,42 +12,42 @@ class ExpressionParser():
         parser.log("start:parsePrimaryExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
         type = parser.currentTokenType
         
-        if type == TokenTypes.INTEGER:
+        if type == TT.TokenTypes.INTEGER:
             result = NumberExpression(int(parser.advance().code))
             parser.log("end:parsePrimaryExpression", "debug" )
             return result
         
-        elif type == TokenTypes.FLOAT:
+        elif type == TT.TokenTypes.FLOAT:
             result = NumberExpression(float(parser.advance().code))
             parser.log("end:parsePrimaryExpression", "debug" )
             return result
 
-        elif type == TokenTypes.SIENTIFIC:
+        elif type == TT.TokenTypes.SIENTIFIC:
             result = StringExpression(parser.advance().code)
             parser.log("end:parsePrimaryExpression", "debug" )
             return result
 
-        elif type == TokenTypes.STRING:
+        elif type == TT.TokenTypes.STRING:
             result = StringExpression(parser.advance().code)
             parser.log("end:parsePrimaryExpression", "debug" )
             
-        elif type == TokenTypes.IDENTIFIER:
+        elif type == TT.TokenTypes.IDENTIFIER:
             result = SymbolExpression(parser.advance().code)
             parser.log("end:parsePrimaryExpression", "debug" )
             return result
 
-        elif type == TokenTypes.LINENUMBER:
+        elif type == TT.TokenTypes.LINENUMBER:
             result = LabelExpression(parser.advance().code)
             parser.log("end:parsePrimaryExpression", "debug" )
             return result
         
-        elif type == TokenTypes.COMMENT:
+        elif type == TT.TokenTypes.COMMENT:
             result = CommentExpression(parser.advance().code)
             parser.log("end:parsePrimaryExpression", "debug" )
             return result
         
         else:
-            raise ValueError( "Can't generate primary expression for {}!".format(TokenTypes.getString(type)) )
+            raise ValueError( "Can't generate primary expression for {}!".format(TT.TokenTypes.getString(type)) )
     
     ##
     #
@@ -59,28 +59,28 @@ class ExpressionParser():
         # parse nud
         tokenType   = parser.currentTokenType
         
-        if tokenType not in Lookups.nud:
-            raise ValueError("Nud handler expected for token type ({})".format(TokenTypes.getString(tokenType)) )
+        if tokenType not in LU.Lookups.nud:
+            raise ValueError("Nud handler expected for token type ({})".format(TT.TokenTypes.getString(tokenType)) )
         
-        nudFunction = Lookups.nud[tokenType]
+        nudFunction = LU.Lookups.nud[tokenType]
 
         left = nudFunction(parser)
          
         # This is for linenumber/labels/eof
-        if parser.currentTokenType not in Lookups.bp:
+        if parser.currentTokenType not in LU.Lookups.bp:
             parser.log("end:parseExpression ... ", "debug" )
             return left
 
-        while parser.hasTokens and Lookups.bp[parser.currentTokenType] > bp:
+        while parser.hasTokens and LU.Lookups.bp[parser.currentTokenType] > bp:
             tokenType = parser.currentTokenType
-            if tokenType not in Lookups.led:
-                raise ValueError("Led handler expected for token type ({})".format(TokenTypes.getString(tokenType)) )
-            ledFunction = Lookups.led[tokenType]
-            left = ledFunction(parser,left,Lookups.bp[parser.currentTokenType])
+            if tokenType not in LU.Lookups.led:
+                raise ValueError("Led handler expected for token type ({})".format(TT.TokenTypes.getString(tokenType)) )
+            ledFunction = LU.Lookups.led[tokenType]
+            left = ledFunction(parser,left,LU.Lookups.bp[parser.currentTokenType])
             parser.log("left =  '{}'".format(parser.currentToken.code) )
 
             # This is for linenumber/labels/eof
-            if parser.currentTokenType not in Lookups.bp:
+            if parser.currentTokenType not in LU.Lookups.bp:
                 parser.log("end:parseExpression ... ", "debug" )
                 return left
             
@@ -101,7 +101,7 @@ class ExpressionParser():
     def parseBinaryExpression(parser, left, bp ):
         parser.log("start:parseBinaryExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
         operatorToken = parser.advance()
-        right = ExpressionParser.parseExpression(parser,BindingPower.DEFAULT)
+        right = ExpressionParser.parseExpression(parser,BP.BindingPower.DEFAULT)
 
         result = BinaryExpression(
             left,
@@ -118,7 +118,7 @@ class ExpressionParser():
     def parsePrefixExpression(parser):
         parser.log("start:parsePrefixExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
         operatorToken = parser.advance()
-        right = ExpressionParser.parseExpression(parser,BindingPower.DEFAULT)
+        right = ExpressionParser.parseExpression(parser,BP.BindingPower.DEFAULT)
 
         result = PrefixExpression(
             operatorToken,

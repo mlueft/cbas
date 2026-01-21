@@ -1,7 +1,6 @@
-import cbas.Ast.Statements as Statements
-import cbas.Parser.Lookups as Lookups
-import cbas.Lexer.TokenTypes as TokenTypes
-import cbas.Ast.Statements as Statements
+import cbas.Parser.Lookups as LU
+import cbas.Lexer.TokenTypes as TT
+import cbas.Ast.Statements as STS
 
 class Parser():
 
@@ -37,25 +36,25 @@ class Parser():
 			self.log("=========================================")
 			self.log("while hasToken ...")
 			self.log("=========================================")
-			self.body.append( Statements.StatementParser.parseStatement(self) )
+			self.body.append( STS.StatementParser.parseStatement(self) )
 		
 		self.log("end:parsing()")
-		return Statements.BlockStatement(self.body)
+		return STS.BlockStatement(self.body)
 
 	def createLookupTables(self):
-		Lookups.reset()
+		LU.Lookups.reset()
 
 		for i in self.config.tokens:
 
-			handler = Lookups.getHandler( i.type )
+			handler = LU.Lookups.getHandler( i.type )
 			category = i.category
 			
 			if category == "led":
-				Lookups.registerLed( i.type, i.bindingpower, handler )
+				LU.Lookups.registerLed( i.type, i.bindingpower, handler )
 			elif category == "nud":
-				Lookups.registerNud( i.type, handler )
+				LU.Lookups.registerNud( i.type, handler )
 			elif category == "statement":
-				Lookups.registerStatement( i.type, handler )
+				LU.Lookups.registerStatement( i.type, handler )
 			else:
 				raise ValueError("Category for '{}' not found!".format( cbas.Lexer.TokenTypes.getString(i.type) ))
 		
@@ -69,7 +68,7 @@ class Parser():
 
 	@property
 	def hasTokens(self):
-		return self.pos < len(self.tokens) and self.currentTokenType != TokenTypes.EOF
+		return self.pos < len(self.tokens) and self.currentTokenType != TT.TokenTypes.EOF
 	
 	def advance(self):
 		tk = self.currentToken

@@ -2,11 +2,11 @@ import json
 from operator import attrgetter
 
 import cbas.Ast.Expressions as Expression
-import cbas.Lexer.TokenTypes as TokenTypes
-import cbas.Lexer.ConfigToken as LConfigToken
-import cbas.Parser.ConfigToken as PConfigToken
-import cbas.Config.LexerConfig as LexerConfig
-import cbas.Config.ParserConfig as ParserConfig
+import cbas.Lexer.TokenTypes as TT
+import cbas.Lexer.ConfigToken as LCT
+import cbas.Parser.ConfigToken as PCT
+import cbas.Config.LexerConfig as LC
+import cbas.Config.ParserConfig as PC
 
 class ConfigLoader():
     
@@ -26,7 +26,7 @@ class ConfigLoader():
      #
      #
     def getLexerConfig(self, name, recursion = 0):
-        result = LexerConfig.LexerConfig()
+        result = LC.LexerConfig()
         #result = []
     
         self.loadConfig()
@@ -54,8 +54,8 @@ class ConfigLoader():
       
                 for t in c["tokens"]:
                     result.tokens.append(
-                        LConfigToken(
-                            TokenTypes.getType(t["type"]),
+                        LCT(
+                            TT.getType(t["type"]),
                             t["expression"],
                             t["order"],
                             t["name"],
@@ -74,7 +74,7 @@ class ConfigLoader():
     #
     #
     def getParserConfig(self, name, recursion = 0):
-        result = ParserConfig.ParserConfig()
+        result = PC.ParserConfig()
         
         self.loadConfig()
         
@@ -93,9 +93,9 @@ class ConfigLoader():
                         result.tokens.append(t)
 
                 for t in c["lookups"]:
-                    result.tokens.append(PConfigToken.ConfigToken(
+                    result.tokens.append(PCT.ConfigToken(
                         t["bindingpower"],
-                        TokenTypes.getType(t["type"]),
+                        TT.getType(t["type"]),
                         t["category"],
                     ) )
 

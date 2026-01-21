@@ -1,10 +1,10 @@
 import re
 
-from cbas.Config.Config import Config
-from cbas.TokenChainOptimizer import TokenchainOptimizer
-from cbas.Parser import Parser
+import cbas.Config.Config as Config
+import cbas.TokenChainOptimizer.TokenChainOptimizer as TO
+import cbas.Parser.Parser as P
 #from cbas.Config.ConfigLoader import ConfigLoader
-from cbas.Lexer.Lexer import Lexer
+import cbas.Lexer.Lexer as L
 
 
 def debugLexerChainList(token):
@@ -41,12 +41,12 @@ def compile(inputFile, contextFile, configIndex):
 	# Load config
 	#
 	#conf = ConfigLoader(contextFile)
-	conf = Config()
+	conf = Config.Config()
 
 	#
  	# Run Lexer
 	#
-	lexer = Lexer(configIndex,contextFile)
+	lexer = L.Lexer(configIndex,contextFile)
 	lexer.config = conf.getLexerConfig(configIndex)
 	lexer._verbose = True
 	lex = lexer.lex(inputFile)
@@ -56,7 +56,7 @@ def compile(inputFile, contextFile, configIndex):
 	#
 	# Run Chain optimizers
 	#
-	optimizer = TokenchainOptimizer()
+	optimizer = TO.TokenchainOptimizer()
 	lex = optimizer.optimize(lexer.firstToken)
 
 	debugTokenlist( lexer.getTokenList() )
@@ -64,7 +64,7 @@ def compile(inputFile, contextFile, configIndex):
 	#
 	# Run Parser
 	#
-	parser = Parser()
+	parser = P.Parser()
 	parser.config = conf.getParserConfig(configIndex)
 	tokenList = lexer.getTokenList()
 	ast = parser.parse(tokenList)
@@ -73,8 +73,8 @@ def compile(inputFile, contextFile, configIndex):
 
 
 def main():
-	configFile  = "/home/work/programming/cbas/config/config.json"
-	inputFile   = "/home/work/programming/cbas/examples/main1.bas"
+	configFile  = "/home/work/cbas/config/config.json"
+	inputFile   = "/home/work/cbas/examples/main1.bas"
 
 	compile( inputFile, configFile, 0 )
 

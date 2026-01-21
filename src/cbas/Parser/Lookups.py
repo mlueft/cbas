@@ -1,6 +1,6 @@
-import cbas.Ast.Statements as Statements
-import cbas.Ast.Expressions as Expressions
-import cbas.Lexer.TokenTypes as TokenTypes
+import cbas.Ast.Statements as STS
+import cbas.Ast.Expressions as EXP
+import cbas.Lexer.TokenTypes as TT
 
 #from cbas.Lexer ..Lexer import TokenTypes
 from ..Parser import BindingPower
@@ -38,36 +38,36 @@ class Lookups():
 
     @staticmethod
     def getHandler(type):
-        if type == TokenTypes.AND:         return Expressions.ExpressionParser.parseBinaryExpression
-        if type == TokenTypes.OR:          return Expressions.ExpressionParser.parseBinaryExpression
-        if type == TokenTypes.NOT:         return Expressions.ExpressionParser.parseBinaryExpression
+        if type == TT.TokenTypes.AND:         return EXP.ExpressionParser.parseBinaryExpression
+        if type == TT.TokenTypes.OR:          return EXP.ExpressionParser.parseBinaryExpression
+        if type == TT.TokenTypes.NOT:         return EXP.ExpressionParser.parseBinaryExpression
 
-        if type == TokenTypes.EQ:          return Expressions.ExpressionParser.parseBinaryExpression
-        if type == TokenTypes.NEQ:         return Expressions.ExpressionParser.parseBinaryExpression
-        if type == TokenTypes.LE:          return Expressions.ExpressionParser.parseBinaryExpression
-        if type == TokenTypes.GE:          return Expressions.ExpressionParser.parseBinaryExpression
-        if type == TokenTypes.LESS:        return Expressions.ExpressionParser.parseBinaryExpression
-        if type == TokenTypes.MORE:        return Expressions.ExpressionParser.parseBinaryExpression
+        if type == TT.TokenTypes.EQ:          return EXP.ExpressionParser.parseBinaryExpression
+        if type == TT.TokenTypes.NEQ:         return EXP.ExpressionParser.parseBinaryExpression
+        if type == TT.TokenTypes.LE:          return EXP.ExpressionParser.parseBinaryExpression
+        if type == TT.TokenTypes.GE:          return EXP.ExpressionParser.parseBinaryExpression
+        if type == TT.TokenTypes.LESS:        return EXP.ExpressionParser.parseBinaryExpression
+        if type == TT.TokenTypes.MORE:        return EXP.ExpressionParser.parseBinaryExpression
         
-        if type == TokenTypes.ADD:         return Expressions.ExpressionParser.parseBinaryExpression
-        #if type == TokenTypes.MINUS:       return Expressions.ExpressionParser.parseBinaryExpression
-        if type == TokenTypes.MINUS:       return Expressions.ExpressionParser.parsePrefixExpression
+        if type == TT.TokenTypes.ADD:         return EXP.ExpressionParser.parseBinaryExpression
+        #if type == TokenTypes.TokenTypes.MINUS:       return Expressions.ExpressionParser.parseBinaryExpression
+        if type == TT.TokenTypes.MINUS:       return EXP.ExpressionParser.parsePrefixExpression
         
-        if type == TokenTypes.MUL:         return Expressions.ExpressionParser.parseBinaryExpression
-        if type == TokenTypes.DIV:         return Expressions.ExpressionParser.parseBinaryExpression
-        if type == TokenTypes.EXPONENTIAL: return Expressions.ExpressionParser.parseBinaryExpression
+        if type == TT.TokenTypes.MUL:         return EXP.ExpressionParser.parseBinaryExpression
+        if type == TT.TokenTypes.DIV:         return EXP.ExpressionParser.parseBinaryExpression
+        if type == TT.TokenTypes.EXPONENTIAL: return EXP.ExpressionParser.parseBinaryExpression
         
-        if type == TokenTypes.EOF:         return Expressions.ExpressionParser.parseEOFExpression
+        if type == TT.TokenTypes.EOF:         return EXP.ExpressionParser.parseEOFExpression
         
-        if type == TokenTypes.INTEGER:     return Expressions.ExpressionParser.parsePrimaryExpression
-        if type == TokenTypes.FLOAT:       return Expressions.ExpressionParser.parsePrimaryExpression
-        if type == TokenTypes.SIENTIFIC:   return Expressions.ExpressionParser.parsePrimaryExpression
-        if type == TokenTypes.STRING:      return Expressions.ExpressionParser.parsePrimaryExpression
-        if type == TokenTypes.IDENTIFIER:  return Expressions.ExpressionParser.parsePrimaryExpression
+        if type == TT.TokenTypes.INTEGER:     return EXP.ExpressionParser.parsePrimaryExpression
+        if type == TT.TokenTypes.FLOAT:       return EXP.ExpressionParser.parsePrimaryExpression
+        if type == TT.TokenTypes.SIENTIFIC:   return EXP.ExpressionParser.parsePrimaryExpression
+        if type == TT.TokenTypes.STRING:      return EXP.ExpressionParser.parsePrimaryExpression
+        if type == TT.TokenTypes.IDENTIFIER:  return EXP.ExpressionParser.parsePrimaryExpression
         
-        if type == TokenTypes.LINENUMBER:  return Expressions.ExpressionParser.parsePrimaryExpression
+        if type == TT.TokenTypes.LINENUMBER:  return EXP.ExpressionParser.parsePrimaryExpression
 
-        if type == TokenTypes.COMMENT:     return Expressions.ExpressionParser.parsePrimaryExpression
+        if type == TT.TokenTypes.COMMENT:     return EXP.ExpressionParser.parsePrimaryExpression
 
 
         raise ValueError("No handler found for {}!".format( type ))
