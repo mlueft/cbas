@@ -1,9 +1,21 @@
-import cbas.Ast.Expressions as EXPRESSION
-import cbas.Parser.BindingPower as BINDINGPOWER
-import cbas.Parser.Lookups as LOOKUPS
+import cbas.Ast.Expressions
+import cbas.Parser.BindingPower
+import cbas.Parser.Lookups
+
+Lookups = cbas.Parser.Lookups.Lookups
+BindingPower = cbas.Parser.BindingPower.BindingPower
+Lookups = cbas.Parser.Lookups.Lookups
+ExpressionParser = cbas.Ast.Expressions.ExpressionParser
 
 class StatementParser():
     
+    ##
+    #
+    #
+    @staticmethod
+    def registerHandlers():
+        pass
+
     ##
     #
     #
@@ -12,12 +24,12 @@ class StatementParser():
         parser.log("start:parseStatement ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
         tokenType = parser.currentTokenType
 
-        if tokenType in LOOKUPS.Lookups.statement:
-            statementFunction = cbas.Parser.Lookups.statement[tokenType]
+        if tokenType in Lookups.statement:
+            statementFunction = Lookups.Lookups.statement[tokenType]
             parser.log("end:parseStatement", "debug" )
             return statementFunction()
 
-        expression = EXPRESSION.ExpressionParser.parseExpression( parser, 0)
+        expression = ExpressionParser.parseExpression( parser, 0)
         #p.expect(TokenTypes.SEMICOLON)
 
         parser.log("end:parseStatement", "debug" )
@@ -31,7 +43,7 @@ class StatementParser():
         parser.log("start:parseCommentStatement ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
         token = parser.currentToken
 
-        expression = cbas.Ast.Expressions.ExpressionParser.parseExpression( parser, 0)
+        expression = ExpressionParser.parseExpression( parser, 0)
 
         parser.log("end:parseCommentStatement", "debug" )
         return CommentStatement(token.code)

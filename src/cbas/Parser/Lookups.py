@@ -1,11 +1,6 @@
-import cbas.Ast.Statements as STS
-import cbas.Ast.Expressions as EXP
-import cbas.Lexer.TokenTypes as TT
+import cbas.Lexer.TokenTypes
 
-#from cbas.Lexer ..Lexer import TokenTypes
-from ..Parser import BindingPower
-
-#from cbas.Ast.Expressions import Expression
+TokenTypes = cbas.Lexer.TokenTypes.TokenTypes
 
 class Lookups():
     bp         = {}
@@ -13,6 +8,7 @@ class Lookups():
     led        = {}
     statement  = {}
     default_bp = 0
+    handler    = {}
 
     @staticmethod
     def reset():
@@ -21,6 +17,7 @@ class Lookups():
         Lookups.led       = {}
         Lookups.statement = {}
         Lookups.default_bp = 0
+        Lookups.handler    = {}
         
     @staticmethod
     def registerLed(type, bp, handler):
@@ -37,38 +34,57 @@ class Lookups():
         Lookups.statement[type] = handler
 
     @staticmethod
+    def registerHandler(type, handler):
+        print(type)
+        Lookups.handler[type] = handler
+
+    @staticmethod
     def getHandler(type):
-        if type == TT.TokenTypes.AND:         return EXP.ExpressionParser.parseBinaryExpression
-        if type == TT.TokenTypes.OR:          return EXP.ExpressionParser.parseBinaryExpression
-        if type == TT.TokenTypes.NOT:         return EXP.ExpressionParser.parseBinaryExpression
+        Lookups.registerHandlers()
+        return Lookups.handler[type]
+        #raise ValueError("No handler found for {}!".format( type ))
 
-        if type == TT.TokenTypes.EQ:          return EXP.ExpressionParser.parseBinaryExpression
-        if type == TT.TokenTypes.NEQ:         return EXP.ExpressionParser.parseBinaryExpression
-        if type == TT.TokenTypes.LE:          return EXP.ExpressionParser.parseBinaryExpression
-        if type == TT.TokenTypes.GE:          return EXP.ExpressionParser.parseBinaryExpression
-        if type == TT.TokenTypes.LESS:        return EXP.ExpressionParser.parseBinaryExpression
-        if type == TT.TokenTypes.MORE:        return EXP.ExpressionParser.parseBinaryExpression
-        
-        if type == TT.TokenTypes.ADD:         return EXP.ExpressionParser.parseBinaryExpression
-        #if type == TokenTypes.TokenTypes.MINUS:       return Expressions.ExpressionParser.parseBinaryExpression
-        if type == TT.TokenTypes.MINUS:       return EXP.ExpressionParser.parsePrefixExpression
-        
-        if type == TT.TokenTypes.MUL:         return EXP.ExpressionParser.parseBinaryExpression
-        if type == TT.TokenTypes.DIV:         return EXP.ExpressionParser.parseBinaryExpression
-        if type == TT.TokenTypes.EXPONENTIAL: return EXP.ExpressionParser.parseBinaryExpression
-        
-        if type == TT.TokenTypes.EOF:         return EXP.ExpressionParser.parseEOFExpression
-        
-        if type == TT.TokenTypes.INTEGER:     return EXP.ExpressionParser.parsePrimaryExpression
-        if type == TT.TokenTypes.FLOAT:       return EXP.ExpressionParser.parsePrimaryExpression
-        if type == TT.TokenTypes.SIENTIFIC:   return EXP.ExpressionParser.parsePrimaryExpression
-        if type == TT.TokenTypes.STRING:      return EXP.ExpressionParser.parsePrimaryExpression
-        if type == TT.TokenTypes.IDENTIFIER:  return EXP.ExpressionParser.parsePrimaryExpression
-        
-        if type == TT.TokenTypes.LINENUMBER:  return EXP.ExpressionParser.parsePrimaryExpression
+    __initialized = False
 
-        if type == TT.TokenTypes.COMMENT:     return EXP.ExpressionParser.parsePrimaryExpression
+    ##
+    #
+    #
+    @staticmethod
+    def registerHandlers():
+        import cbas.Ast.Expressions
+        #import cbas.Ast.Statements
 
-
-        raise ValueError("No handler found for {}!".format( type ))
+        if Lookups.__initialized:
+            return
+        
+        Lookups.__initialized = True
+        
+        Lookups.registerHandler( TokenTypes.AND         , cbas.Ast.Expressions.ExpressionParser.parseBinaryExpression )
+        Lookups.registerHandler( TokenTypes.OR          , cbas.Ast.Expressions.ExpressionParser.parseBinaryExpression )
+        Lookups.registerHandler( TokenTypes.NOT         , cbas.Ast.Expressions.ExpressionParser.parseBinaryExpression )
+        
+        Lookups.registerHandler( TokenTypes.EQ          , cbas.Ast.Expressions.ExpressionParser.parseBinaryExpression )
+        Lookups.registerHandler( TokenTypes.NEQ         , cbas.Ast.Expressions.ExpressionParser.parseBinaryExpression )
+        Lookups.registerHandler( TokenTypes.LE          , cbas.Ast.Expressions.ExpressionParser.parseBinaryExpression )
+        Lookups.registerHandler( TokenTypes.GE          , cbas.Ast.Expressions.ExpressionParser.parseBinaryExpression )
+        Lookups.registerHandler( TokenTypes.LESS        , cbas.Ast.Expressions.ExpressionParser.parseBinaryExpression )
+        Lookups.registerHandler( TokenTypes.MORE        , cbas.Ast.Expressions.ExpressionParser.parseBinaryExpression )
+        
+        Lookups.registerHandler( TokenTypes.ADD         , cbas.Ast.Expressions.ExpressionParser.parseBinaryExpression )
+        Lookups.registerHandler( TokenTypes.MINUS       , cbas.Ast.Expressions.ExpressionParser.parsePrefixExpression )
+        
+        Lookups.registerHandler( TokenTypes.MUL         , cbas.Ast.Expressions.ExpressionParser.parseBinaryExpression )
+        Lookups.registerHandler( TokenTypes.DIV         , cbas.Ast.Expressions.ExpressionParser.parseBinaryExpression )
+        
+        Lookups.registerHandler( TokenTypes.EXPONENTIAL , cbas.Ast.Expressions.ExpressionParser.parseBinaryExpression )
+        Lookups.registerHandler( TokenTypes.EOF         , cbas.Ast.Expressions.ExpressionParser.parseEOFExpression )
+        
+        Lookups.registerHandler( TokenTypes.INTEGER     , cbas.Ast.Expressions.ExpressionParser.parsePrimaryExpression )
+        Lookups.registerHandler( TokenTypes.FLOAT       , cbas.Ast.Expressions.ExpressionParser.parsePrimaryExpression )
+        Lookups.registerHandler( TokenTypes.SIENTIFIC   , cbas.Ast.Expressions.ExpressionParser.parsePrimaryExpression )
+        Lookups.registerHandler( TokenTypes.STRING      , cbas.Ast.Expressions.ExpressionParser.parsePrimaryExpression )
+        Lookups.registerHandler( TokenTypes.IDENTIFIER  , cbas.Ast.Expressions.ExpressionParser.parsePrimaryExpression )
+        
+        Lookups.registerHandler( TokenTypes.LINENUMBER  , cbas.Ast.Expressions.ExpressionParser.parsePrimaryExpression )
+        Lookups.registerHandler( TokenTypes.COMMENT     , cbas.Ast.Expressions.ExpressionParser.parsePrimaryExpression )
     

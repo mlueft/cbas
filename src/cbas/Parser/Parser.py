@@ -1,6 +1,11 @@
-import cbas.Parser.Lookups as LU
-import cbas.Lexer.TokenTypes as TT
-import cbas.Ast.Statements as STS
+import cbas.Parser.Lookups
+import cbas.Lexer.TokenTypes
+import cbas.Ast.Statements
+
+StatementParser = cbas.Ast.Statements.StatementParser
+BlockStatement = cbas.Ast.Statements.BlockStatement
+TokenTypes = cbas.Lexer.TokenTypes.TokenTypes
+Lookups = cbas.Parser.Lookups.Lookups
 
 class Parser():
 
@@ -36,27 +41,27 @@ class Parser():
 			self.log("=========================================")
 			self.log("while hasToken ...")
 			self.log("=========================================")
-			self.body.append( STS.StatementParser.parseStatement(self) )
+			self.body.append( StatementParser.parseStatement(self) )
 		
 		self.log("end:parsing()")
-		return STS.BlockStatement(self.body)
+		return BlockStatement(self.body)
 
 	def createLookupTables(self):
-		LU.Lookups.reset()
+		Lookups.reset()
 
 		for i in self.config.tokens:
 
-			handler = LU.Lookups.getHandler( i.type )
+			handler = Lookups.getHandler( i.type )
 			category = i.category
 			
 			if category == "led":
-				LU.Lookups.registerLed( i.type, i.bindingpower, handler )
+				Lookups.registerLed( i.type, i.bindingpower, handler )
 			elif category == "nud":
-				LU.Lookups.registerNud( i.type, handler )
+				Lookups.registerNud( i.type, handler )
 			elif category == "statement":
-				LU.Lookups.registerStatement( i.type, handler )
+				Lookups.registerStatement( i.type, handler )
 			else:
-				raise ValueError("Category for '{}' not found!".format( cbas.Lexer.TokenTypes.getString(i.type) ))
+				raise ValueError("Category for '{}' not found!".format( TokenTypes.getString(i.type) ))
 		
 	@property
 	def currentToken(self):
@@ -68,7 +73,7 @@ class Parser():
 
 	@property
 	def hasTokens(self):
-		return self.pos < len(self.tokens) and self.currentTokenType != TT.TokenTypes.EOF
+		return self.pos < len(self.tokens) and self.currentTokenType != TokenTypes.EOF
 	
 	def advance(self):
 		tk = self.currentToken
@@ -85,7 +90,7 @@ class Parser():
 
 		if type != tokenType:
 			if error == None:
-				raise ValueError("Expected {} but received {}!".format( tokenType, cbas.Lexer.TokenTypes.getString(type) ))
+				raise ValueError("Expected {} but received {}!".format( tokenType, TokenTypes.getString(type) ))
 			
 			raise ValueError( error )
 		

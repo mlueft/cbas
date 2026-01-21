@@ -1,4 +1,6 @@
-import cbas.Lexer.TokenTypes as TT
+import cbas.Lexer.TokenTypes
+
+TokenTypes = cbas.Lexer.TokenTypes.TokenTypes
 
 ##
 #
@@ -12,7 +14,7 @@ class ListToken():
 		self.type = type
 
 	def __str__(self):
-		return "{}:{} - '{}' '{}'".format( self.line, self.pos, self.code, TT.TokenTypes.getString(self.type) )
+		return "{}:{} - '{}' '{}'".format( self.line, self.pos, self.code, TokenTypes.getString(self.type) )
 
 	def __repr__(self):
 		if self.isString:

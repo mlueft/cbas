@@ -1,7 +1,10 @@
 import re
 
-import cbas.Lexer.Tokens as T
-import cbas.Lexer.TokenTypes as TT
+import cbas.Lexer.Tokens
+import cbas.Lexer.TokenTypes
+
+TokenTypes = cbas.Lexer.TokenTypes.TokenTypes
+ChainToken = cbas.Lexer.Tokens.ChainToken
 
 class Lexer():
 
@@ -20,61 +23,61 @@ class Lexer():
 	#
 	#
 	def createUniqueToken(self,type=0, pos=0):
-		return T.ChainToken("",self.__line+1,self.pos+1,type)
+		return ChainToken("",self.__line+1,self.pos+1,type)
 	
 	##
 	#
 	#
 	def createToken(self,match,expression):
-		return T.ChainToken(match[0],self.__line+1,self.pos+1,expression.type)
+		return ChainToken(match[0],self.__line+1,self.pos+1,expression.type)
 
 	##
 	#
 	#
 	def createHandlerList(self):
 		return {
-			TT.TokenTypes.INTEGER     :self.__defaultHandler,
-			TT.TokenTypes.FLOAT       :self.__defaultHandler,
-			TT.TokenTypes.SIENTIFIC   :self.__defaultHandler,
-			TT.TokenTypes.LINENUMBER  :self.__defaultHandler,
-			TT.TokenTypes.STRING      :self.__stringHandler,
-			TT.TokenTypes.STATEMENT   :self.__defaultHandler,
-			TT.TokenTypes.FUNCTION    :self.__defaultHandler,
+			TokenTypes.INTEGER     :self.__defaultHandler,
+			TokenTypes.FLOAT       :self.__defaultHandler,
+			TokenTypes.SIENTIFIC   :self.__defaultHandler,
+			TokenTypes.LINENUMBER  :self.__defaultHandler,
+			TokenTypes.STRING      :self.__stringHandler,
+			TokenTypes.STATEMENT   :self.__defaultHandler,
+			TokenTypes.FUNCTION    :self.__defaultHandler,
 			
-			TT.TokenTypes.ADD         :self.__defaultHandler,
-			TT.TokenTypes.MINUS       :self.__defaultHandler,
-			TT.TokenTypes.MUL         :self.__defaultHandler,
-			TT.TokenTypes.DIV         :self.__defaultHandler,
-			TT.TokenTypes.EXPONENTIAL :self.__defaultHandler,
+			TokenTypes.ADD         :self.__defaultHandler,
+			TokenTypes.MINUS       :self.__defaultHandler,
+			TokenTypes.MUL         :self.__defaultHandler,
+			TokenTypes.DIV         :self.__defaultHandler,
+			TokenTypes.EXPONENTIAL :self.__defaultHandler,
 			
-			TT.TokenTypes.EQ          :self.__defaultHandler,
-			TT.TokenTypes.NEQ         :self.__defaultHandler,
-			TT.TokenTypes.LE          :self.__defaultHandler,
-			TT.TokenTypes.GE          :self.__defaultHandler,
-			TT.TokenTypes.LESS        :self.__defaultHandler,
-			TT.TokenTypes.MORE        :self.__defaultHandler,
+			TokenTypes.EQ          :self.__defaultHandler,
+			TokenTypes.NEQ         :self.__defaultHandler,
+			TokenTypes.LE          :self.__defaultHandler,
+			TokenTypes.GE          :self.__defaultHandler,
+			TokenTypes.LESS        :self.__defaultHandler,
+			TokenTypes.MORE        :self.__defaultHandler,
 			
-			TT.TokenTypes.AND         :self.__defaultHandler,
-			TT.TokenTypes.OR          :self.__defaultHandler,
-			TT.TokenTypes.NOT         :self.__defaultHandler,
+			TokenTypes.AND         :self.__defaultHandler,
+			TokenTypes.OR          :self.__defaultHandler,
+			TokenTypes.NOT         :self.__defaultHandler,
    
-			TT.TokenTypes.CURLYOPEN   :self.__defaultHandler,
-			TT.TokenTypes.CURLYCLOSE  :self.__defaultHandler,
-			TT.TokenTypes.ROUNDOPEN   :self.__defaultHandler,
-			TT.TokenTypes.ROUNDCLOSE  :self.__defaultHandler,
+			TokenTypes.CURLYOPEN   :self.__defaultHandler,
+			TokenTypes.CURLYCLOSE  :self.__defaultHandler,
+			TokenTypes.ROUNDOPEN   :self.__defaultHandler,
+			TokenTypes.ROUNDCLOSE  :self.__defaultHandler,
 			
-			TT.TokenTypes.SEMICOLON   :self.__defaultHandler,
-			TT.TokenTypes.COLON       :self.__defaultHandler,
+			TokenTypes.SEMICOLON   :self.__defaultHandler,
+			TokenTypes.COLON       :self.__defaultHandler,
 			
-			TT.TokenTypes.COMMA       :self.__defaultHandler,
-			TT.TokenTypes.COMMENT     :self.__defaultHandler,
-			TT.TokenTypes.IGNORE      :self.__ignoreHandler,
-			TT.TokenTypes.LINESTART   :self.__defaultHandler,
-			TT.TokenTypes.LINEEND     :self.__defaultHandler,
-			TT.TokenTypes.IDENTIFIER  :self.__defaultHandler,
-			TT.TokenTypes.WHITESPACE  :self.__ignoreHandler,
+			TokenTypes.COMMA       :self.__defaultHandler,
+			TokenTypes.COMMENT     :self.__defaultHandler,
+			TokenTypes.IGNORE      :self.__ignoreHandler,
+			TokenTypes.LINESTART   :self.__defaultHandler,
+			TokenTypes.LINEEND     :self.__defaultHandler,
+			TokenTypes.IDENTIFIER  :self.__defaultHandler,
+			TokenTypes.WHITESPACE  :self.__ignoreHandler,
 			
-			TT.TokenTypes.EOF         :self.__defaultHandler
+			TokenTypes.EOF         :self.__defaultHandler
 		}
 	
 	##
@@ -100,7 +103,7 @@ class Lexer():
 				line = line.strip("\n")
 
 				if self.config.markLinestart:
-					token = self.createUniqueToken(TT.TokenTypes.LINESTART,0)
+					token = self.createUniqueToken(TokenTypes.LINESTART,0)
 					self.appendToken(token)
 
 				self.pos = 0
@@ -128,14 +131,14 @@ class Lexer():
 						break
 
 				if self.config.markLineend:
-					token = self.createUniqueToken(TT.TokenTypes.LINEEND, self.pos)
+					token = self.createUniqueToken(TokenTypes.LINEEND, self.pos)
 					self.appendToken(token)
 
 				self.log("", "verbose")
 				line = source.readline()
 				self.__line += 1
 				
-			token = self.createUniqueToken(TT.TokenTypes.EOF, self.pos)
+			token = self.createUniqueToken(TokenTypes.EOF, self.pos)
 			self.appendToken(token)
 			
 		return 0
@@ -175,7 +178,7 @@ class Lexer():
 			token = handler(match,expression)
 			if token is not None:
 				self.appendToken(token)
-				self.log( ((" "*posOld)+"{}-{}").format(match[0],TT.TokenTypes.getString(token.type)), "verbose" )
+				self.log( ((" "*posOld)+"{}-{}").format(match[0],TokenTypes.getString(token.type)), "verbose" )
 			return True
 		return False
 
