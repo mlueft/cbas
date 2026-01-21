@@ -12,8 +12,8 @@ class StatementParser():
         parser.log("start:parseStatement ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
         tokenType = parser.currentTokenType
 
-        if tokenType in cbas.Parser.Lookups.Lookups.statement:
-            statementFunction = cbas.Parser.Lookups.Lookups.statement[tokenType]
+        if tokenType in cbas.Parser.Lookups.statement:
+            statementFunction = cbas.Parser.Lookups.statement[tokenType]
             parser.log("end:parseStatement", "debug" )
             return statementFunction()
 

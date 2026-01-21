@@ -33,7 +33,9 @@ class Lexer():
 	#
 	def createHandlerList(self):
 		return {
-			TokenTypes.NUMBER      :self.__defaultHandler,
+			TokenTypes.INTEGER     :self.__defaultHandler,
+			TokenTypes.FLOAT       :self.__defaultHandler,
+			TokenTypes.SIENTIFIC   :self.__defaultHandler,
 			TokenTypes.LINENUMBER  :self.__defaultHandler,
 			TokenTypes.STRING      :self.__stringHandler,
 			TokenTypes.STATEMENT   :self.__defaultHandler,
@@ -133,8 +135,8 @@ class Lexer():
 				line = source.readline()
 				self.__line += 1
 				
-				token = self.createUniqueToken(TokenTypes.EOF, self.pos)
-				self.appendToken(token)
+			token = self.createUniqueToken(TokenTypes.EOF, self.pos)
+			self.appendToken(token)
 			
 		return 0
 	

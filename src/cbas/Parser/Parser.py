@@ -34,25 +34,28 @@ class Parser():
 		self.tokens = tokens
 		self.body = []
 		while self.hasTokens:
+			self.log("=========================================")
 			self.log("while hasToken ...")
+			self.log("=========================================")
 			self.body.append( Statements.StatementParser.parseStatement(self) )
-			self.log("end:parsing()")
+		
+		self.log("end:parsing()")
 		return Statements.BlockStatement(self.body)
 
 	def createLookupTables(self):
-		Lookups.Lookups.reset()
+		Lookups.reset()
 
 		for i in self.config.tokens:
 
-			handler = Lookups.Lookups.getHandler( i.type )
+			handler = Lookups.getHandler( i.type )
 			category = i.category
 			
 			if category == "led":
-				Lookups.Lookups.registerLed( i.type, i.bindingpower, handler )
+				Lookups.registerLed( i.type, i.bindingpower, handler )
 			elif category == "nud":
-				Lookups.Lookups.registerNud( i.type, i.bindingpower, handler )
+				Lookups.registerNud( i.type, handler )
 			elif category == "statement":
-				Lookups.Lookups.registerStatement( i.type, handler )
+				Lookups.registerStatement( i.type, handler )
 			else:
 				raise ValueError("Category for '{}' not found!".format( cbas.Lexer.TokenTypes.getString(i.type) ))
 		

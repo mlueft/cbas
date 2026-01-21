@@ -12,11 +12,21 @@ class ExpressionParser():
         parser.log("start:parsePrimaryExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
         type = parser.currentTokenType
         
-        if type == TokenTypes.NUMBER:
-            result = NumberExpression(float(parser.advance().code))
+        if type == TokenTypes.INTEGER:
+            result = NumberExpression(int(parser.advance().code))
             parser.log("end:parsePrimaryExpression", "debug" )
             return result
         
+        elif type == TokenTypes.FLOAT:
+            result = NumberExpression(float(parser.advance().code))
+            parser.log("end:parsePrimaryExpression", "debug" )
+            return result
+
+        elif type == TokenTypes.SIENTIFIC:
+            result = StringExpression(parser.advance().code)
+            parser.log("end:parsePrimaryExpression", "debug" )
+            return result
+
         elif type == TokenTypes.STRING:
             result = StringExpression(parser.advance().code)
             parser.log("end:parsePrimaryExpression", "debug" )
@@ -25,6 +35,17 @@ class ExpressionParser():
             result = SymbolExpression(parser.advance().code)
             parser.log("end:parsePrimaryExpression", "debug" )
             return result
+
+        elif type == TokenTypes.LINENUMBER:
+            result = LabelExpression(parser.advance().code)
+            parser.log("end:parsePrimaryExpression", "debug" )
+            return result
+        
+        elif type == TokenTypes.COMMENT:
+            result = CommentExpression(parser.advance().code)
+            parser.log("end:parsePrimaryExpression", "debug" )
+            return result
+        
         else:
             raise ValueError( "Can't generate primary expression for {}!".format(TokenTypes.getString(type)) )
     
@@ -38,24 +59,41 @@ class ExpressionParser():
         # parse nud
         tokenType   = parser.currentTokenType
         
-        if tokenType not in Lookups.Lookups.nud:
+        if tokenType not in Lookups.nud:
             raise ValueError("Nud handler expected for token type ({})".format(TokenTypes.getString(tokenType)) )
         
-        nudFunction = Lookups.Lookups.nud[tokenType]
+        nudFunction = Lookups.nud[tokenType]
 
         left = nudFunction(parser)
          
-        while Lookups.Lookups.bp[parser.currentTokenType] > bp and parser.hasTokens:
+        # This is for linenumber/labels/eof
+        if parser.currentTokenType not in Lookups.bp:
+            parser.log("end:parseExpression ... ", "debug" )
+            return left
+
+        while parser.hasTokens and Lookups.bp[parser.currentTokenType] > bp:
             tokenType = parser.currentTokenType
-            if tokenType not in Lookups.Lookups.led:
+            if tokenType not in Lookups.led:
                 raise ValueError("Led handler expected for token type ({})".format(TokenTypes.getString(tokenType)) )
-            ledFunction = Lookups.Lookups.led[tokenType]
-            left = ledFunction(parser,left,bp)
+            ledFunction = Lookups.led[tokenType]
+            left = ledFunction(parser,left,Lookups.bp[parser.currentTokenType])
             parser.log("left =  '{}'".format(parser.currentToken.code) )
 
+            # This is for linenumber/labels/eof
+            if parser.currentTokenType not in Lookups.bp:
+                parser.log("end:parseExpression ... ", "debug" )
+                return left
+            
         parser.log("end:parseExpression ... ", "debug" )
         return left
-    
+
+    ##
+    #
+    #
+    @staticmethod
+    def parseEOFExpression(parser, left, bp ):
+        pass
+        
     ##
     #
     #
@@ -73,39 +111,70 @@ class ExpressionParser():
         parser.log("end:parseBinaryExpression", "debug" )
         return result
    
+    ##
+    #
+    #
+    @staticmethod
+    def parsePrefixExpression(parser):
+        parser.log("start:parsePrefixExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
+        operatorToken = parser.advance()
+        right = ExpressionParser.parseExpression(parser,BindingPower.DEFAULT)
+
+        result = PrefixExpression(
+            operatorToken,
+            right
+        )
+        parser.log("end:parsePrefixExpression", "debug" )
+        return result
 
 
-class Expression():
+
+class NumberExpression():
     
     def __init__(self, value):
         self.value = value
-        
-class NumberExpression(Expression):
-    
-    def __init__(self, value):
-        super().__init__(value)
 
     def debug(self, indentation=0):
         print ((" "*indentation)+"Number({})".format( str(self.value)))
     
-class StringExpression(Expression):
+class StringExpression():
     
     def __init__(self, value):
-        super().__init__(value)
+        self.value = value
     
     def debug(self, indentation=0):
         print ((" "*indentation)+"String({})".format( str(self.value)))
     
-class SymbolExpression(Expression):
+class SymbolExpression():
     
     def __init__(self, value):
-        super().__init__(value)
+        self.value = value
 
     def debug(self, indentation=0):
         print ((" "*indentation)+"Symbol({})".format( str(self.value)))
     
-class BinaryExpression():
+class LabelExpression():
     
+    def __init__(self, value):
+        self.value = value
+
+    def debug(self, indentation=0):
+        print ((" "*indentation)+"Label({})".format( str(self.value)))
+
+class CommentExpression():
+    
+    def __init__(self, value):
+        # if the value starts with 'REM' we remove it
+        if value.upper().startswith("REM"):
+            value = value[3:].strip()
+        
+        self.value = value
+
+    def debug(self, indentation=0):
+        print ((" "*indentation)+"Comment({})".format( str(self.value)))
+
+class BinaryExpression():
+
     def __init__(self,left,operator,right):
         super().__init__()
         self.left     = left
@@ -116,10 +185,29 @@ class BinaryExpression():
         print ((" "*indentation)+" => {}".format(self.operator))
         
         print ((" "*indentation)+"left:")
-        self.left.debug(indentation+4)
+        if self.left is not None:
+            self.left.debug(indentation+4)
+        else:
+            print ((" "*(indentation+4))+"None!!!!!!!")
         
+        print ((" "*indentation)+"right:")
+        if self.right is not None:
+            self.right.debug(indentation+4)
+        else:
+            print ((" "*(indentation+4))+"None!!!!!!!")
+
+        return "left:(left)operator:(operator)right:(right)".format( left=self.left, operator=self.operator, right=self.right )
+
+class PrefixExpression():
+
+    def __init__(self, operator, right):
+        self.operator = operator
+        self.right    = right
+
+    def debug(self, indentation=0):
+        print ((" "*indentation)+" => {}".format(self.operator))
         
         print ((" "*indentation)+"right:")
         self.right.debug(indentation+4)
-        
-        return "left:(left)operator:(operator)right:(right)".format( left=self.left, operator=self.operator, right=self.right )
+
+        return "operator:(operator)right:(right)".format( operator=self.operator, right=self.right )

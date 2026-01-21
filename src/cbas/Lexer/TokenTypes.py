@@ -1,47 +1,52 @@
 
 class TokenTypes():
-	NUMBER      =  0
-	LINENUMBER  =  1
-	STRING      =  2
-	STATEMENT   =  3
-	FUNCTION    =  4
+	_index = 0
+	INTEGER     =  _index;_index += 1
+	FLOAT       =  _index;_index += 1
+	SIENTIFIC   =  _index;_index += 1
+	LINENUMBER  =  _index;_index += 1
+	STRING      =  _index;_index += 1
+	STATEMENT   =  _index;_index += 1
+	FUNCTION    =  _index;_index += 1
 
-	ADD         = 10
-	MINUS       = 11
-	MUL         = 12
-	DIV         = 13
-	EXPONENTIAL = 14
+	ADD         = _index;_index += 1
+	MINUS       = _index;_index += 1
+	MUL         = _index;_index += 1
+	DIV         = _index;_index += 1
+	EXPONENTIAL = _index;_index += 1
 
-	EQ          = 20
-	NEQ         = 21
-	LE          = 22
-	GE          = 23
-	LESS        = 24
-	MORE        = 25
+	EQ          = _index;_index += 1
+	NEQ         = _index;_index += 1
+	LE          = _index;_index += 1
+	GE          = _index;_index += 1
+	LESS        = _index;_index += 1
+	MORE        = _index;_index += 1
 
-	AND         = 30
-	OR          = 31
-	NOT         = 32
+	AND         = _index;_index += 1
+	OR          = _index;_index += 1
+	NOT         = _index;_index += 1
 
-	CURLYOPEN   = 40
-	CURLYCLOSE  = 41
-	ROUNDOPEN   = 42
-	ROUNDCLOSE  = 43
+	CURLYOPEN   = _index;_index += 1
+	CURLYCLOSE  = _index;_index += 1
+	ROUNDOPEN   = _index;_index += 1
+	ROUNDCLOSE  = _index;_index += 1
 	
-	SEMICOLON   = 50
-	COLON       = 51
+	SEMICOLON   = _index;_index += 1
+	COLON       = _index;_index += 1
 	
-	COMMA       = 60
-	COMMENT     = 61
-	IGNORE      = 62
-	LINESTART   = 63
-	LINEEND     = 64
-	IDENTIFIER  = 65
-	WHITESPACE  = 66
-	EOF         = 67
+	COMMA       = _index;_index += 1
+	COMMENT     = _index;_index += 1
+	IGNORE      = _index;_index += 1
+	LINESTART   = _index;_index += 1
+	LINEEND     = _index;_index += 1
+	IDENTIFIER  = _index;_index += 1
+	WHITESPACE  = _index;_index += 1
+	EOF         = _index;_index += 1
 
 	__matchTable = {
-		"number":      NUMBER,
+		"integer":     INTEGER,
+		"float":       FLOAT,
+		"sientific":   SIENTIFIC,
 		"linenumber":  LINENUMBER,
 		"string":      STRING,
 		"statement":   STATEMENT,
