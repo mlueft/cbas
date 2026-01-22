@@ -1,19 +1,9 @@
 
-#define TEST
 
-#ifdef TEST
  test
- #else
-  else
-#endif
 
-#undefine TEST
 
-#ifdef TEST
- test
- #else
   else
-#endif
 
 
 1 REM LEXER TEST PROGRAMM 200 ZEILEN
