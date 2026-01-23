@@ -1,4 +1,6 @@
-import cbas.Preprocessor.Preprocessor as pp
+import cbas.Preprocessor.Preprocessor
+
+Preprocessor = cbas.Preprocessor.Preprocessor.Preprocessor
 
 def main():
     
@@ -8,8 +10,8 @@ def main():
         r"/home/work/cbas/lib"
     ]
         
-    processor = pp.Preprocessor( outputFolder, libFolder)
+    pp = Preprocessor( outputFolder, libFolder)
     
-    processor.process(inputFile)
+    pp.process(inputFile)
     
 main()

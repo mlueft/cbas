@@ -74,7 +74,8 @@ def compile(inputFile, contextFile, configIndex):
 
 def main():
 	configFile  = "/home/work/cbas/config/config.json"
-	inputFile   = "/home/work/cbas/examples/main1.bas"
+	inputFile   = "/home/work/cbas/examples/main.bas"
+	inputFile   = "/home/work/cbas/examples/arithmetic.bas"
 
 	compile( inputFile, configFile, 0 )
 
