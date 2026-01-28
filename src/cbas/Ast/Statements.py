@@ -1,11 +1,19 @@
 import cbas.Ast.Expressions
 import cbas.Parser.BindingPower
 import cbas.Parser.Lookups
+import cbas.Events.EventManager
+import cbas.Events.Event
+import cbas.DataStructures.LinkedList
+import cbas.DataStructures.TreeNode
 
 Lookups = cbas.Parser.Lookups.Lookups
 BindingPower = cbas.Parser.BindingPower.BindingPower
 Lookups = cbas.Parser.Lookups.Lookups
 ExpressionParser = cbas.Ast.Expressions.ExpressionParser
+EventManager = cbas.Events.EventManager.EventManager
+Event = cbas.Events.Event.Event
+LinkedList = cbas.DataStructures.LinkedList.LinkedList
+TreeNode = cbas.DataStructures.TreeNode.TreeNode
 
 class StatementParser():
     
@@ -15,7 +23,7 @@ class StatementParser():
     @staticmethod
     def registerHandlers():
         pass
-
+        
     ##
     #
     #
@@ -49,31 +57,46 @@ class StatementParser():
         return CommentStatement(token.code)
     
         
+##
+#
+#
+class Statement(TreeNode):
+    
+    def __init__(self):
+        super().__init__()
 
-class Statement():
-    pass
-
+##
+#
+#
 class BlockStatement(Statement):
 
-    def __init__(self, body):
+    def __init__(self, first):
         super().__init__()
-        self.body = body
-
+        self.addNode(first)
+    
     def debug(self, indentation=0):
         print((" "*indentation)+"Blockstatement:")
-        for b in self.body:
-            b.debug(indentation+4)
-    
+        t = self.first
+        while t:
+            t.debug(indentation+4)
+            t = t.next
+
+##
+#
+#    
 class ExpressionStatement(Statement):
 
     def __init__(self, expression):
         super().__init__()
-        self.expression = expression
+        self.addNode(expression)
         
     def debug(self, indentation=0):
         print ((" "*indentation)+"ExpressionStatement:")
         self.expression.debug(indentation+4)
 
+##
+#
+#
 class CommentStatement(Statement):
 
     def __init__(self, value):

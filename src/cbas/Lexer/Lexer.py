@@ -8,7 +8,7 @@ ChainToken = cbas.Lexer.Tokens.ChainToken
 
 class Lexer():
 
-    def __init__(self, contextName, contextFile):
+    def __init__(self):
         self.currentToken    = None
         self.firstToken      = None
         self.__line          = 0
@@ -18,6 +18,30 @@ class Lexer():
         self.config          = None
         self._verbose        = False
         self._handlerList    = self.createHandlerList()
+
+    ##
+    #
+    #
+    def _handleFirstRemoved(self,ev):
+        token = ev.eventSource
+        token.onRemoved.remove(self._handleFirstRemoved)
+        token.onInsertedBefore.remove(self._handleFirstInsertedBefore)
+
+        self.firstToken = token.next
+        self.firstToken.onRemoved.add(self._handleFirstRemoved)
+        self.firstToken.onInsertedBefore.add(self._handleFirstInsertedBefore)
+
+    ##
+    #
+    #
+    def _handleFirstInsertedBefore(self, ev):
+        if ev.eventSource == self.firstToken:
+            self.firstToken.onRemoved.remove(self._handleFirstRemoved)
+            self.firstToken.onInsertedBefore.remove(self._handleFirstInsertedBefore)
+
+            self.firstToken = self.firstToken.prev
+            self.firstToken.onRemoved.add(self._handleFirstRemoved)
+            self.firstToken.onInsertedBefore.add(self._handleFirstInsertedBefore)
 
     ##
     #
@@ -117,17 +141,18 @@ class Lexer():
     #
     #
     def tokenizeLine(self,line):
-     
         if self.config is None:
             raise ValueError("Lexer config not set!")
-
         self._tokenizeLine(line)
-  
+
+        token = self.createUniqueToken(TokenTypes.EOF, self.pos)
+        self.appendToken(token)
+
         return 0
 
-     ##
-     #
-     #
+    ##
+    #
+    #
     def _tokenizeLine(self, line):
      
         if self.config.markLinestart:
@@ -170,6 +195,8 @@ class Lexer():
     def appendToken(self,token):
         if self.firstToken == None:
             self.firstToken = token
+            self.firstToken.onRemoved.add(self._handleFirstRemoved)
+            self.firstToken.onInsertedBefore.add(self._handleFirstInsertedBefore)
         
         if self.currentToken == None:
             self.currentToken = token

@@ -15,7 +15,7 @@ class Parser():
 		self.errors = []
 		self.config = None
 		
-		self.body = None
+		self.__first = None
 		self.indentation = 0
 		
 	def log(self,message, type="log"):
@@ -36,15 +36,18 @@ class Parser():
 		
 		self.createLookupTables()
 		self.tokens = tokens
-		self.body = []
+		self.__first = None
 		while self.hasTokens:
 			self.log("=========================================")
 			self.log("while hasToken ...")
 			self.log("=========================================")
-			self.body.append( StatementParser.parseStatement(self) )
+			if self.__first == None:
+				self.__first = StatementParser.parseStatement(self)
+			else:
+				self.__first.last.insertAfter( StatementParser.parseStatement(self) )
 		
 		self.log("end:parsing()")
-		return BlockStatement(self.body)
+		return BlockStatement(self.__first)
 
 	def createLookupTables(self):
 		Lookups.reset()
@@ -70,6 +73,7 @@ class Parser():
 	@property
 	def currentTokenType(self):
 		return self.tokens[self.pos].type
+
 
 	@property
 	def hasTokens(self):

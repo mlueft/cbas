@@ -1,14 +1,19 @@
 import cbas.Lexer.TokenTypes
 import cbas.Parser.Lookups
 import cbas.Parser.BindingPower
+import cbas.Events.EventManager
+import cbas.Events.Event
+import cbas.DataStructures.LinkedList
 
 TokenTypes = cbas.Lexer.TokenTypes.TokenTypes
 Lookups = cbas.Parser.Lookups.Lookups
 BindingPower = cbas.Parser.BindingPower.BindingPower
+EventManager = cbas.Events.EventManager.EventManager
+Event = cbas.Events.Event.Event
+LinkedList = cbas.DataStructures.LinkedList.LinkedList
 
 class ExpressionParser():
     
-
     ##
     #
     #
@@ -138,41 +143,70 @@ class ExpressionParser():
 
 
 
-class NumberExpression():
+##
+#
+#
+class Expression(LinkedList):
+
+    def __init__(self):
+        super().__init__()
+
+
+##
+#
+#
+class NumberExpression(Expression):
     
     def __init__(self, value):
+        super().__init__()
         self.value = value
 
     def debug(self, indentation=0):
         print ((" "*indentation)+"Number({})".format( str(self.value)))
-    
-class StringExpression():
+
+##
+#
+#   
+class StringExpression(Expression):
     
     def __init__(self, value):
+        super().__init__()
         self.value = value
     
     def debug(self, indentation=0):
         print ((" "*indentation)+"String({})".format( str(self.value)))
-    
-class SymbolExpression():
+
+##
+# 
+#    
+class SymbolExpression(Expression):
     
     def __init__(self, value):
+        super().__init__()
         self.value = value
 
     def debug(self, indentation=0):
         print ((" "*indentation)+"Symbol({})".format( str(self.value)))
-    
-class LabelExpression():
+
+##
+# 
+#   
+class LabelExpression(Expression):
     
     def __init__(self, value):
+        super().__init__()
         self.value = value
 
     def debug(self, indentation=0):
         print ((" "*indentation)+"Label({})".format( str(self.value)))
 
-class CommentExpression():
+##
+#
+#
+class CommentExpression(Expression):
     
     def __init__(self, value):
+        super().__init__()
         # if the value starts with 'REM' we remove it
         if value.upper().startswith("REM"):
             value = value[3:].strip()
@@ -182,7 +216,10 @@ class CommentExpression():
     def debug(self, indentation=0):
         print ((" "*indentation)+"Comment({})".format( str(self.value)))
 
-class BinaryExpression():
+##
+#
+# 
+class BinaryExpression(Expression):
 
     def __init__(self,left,operator,right):
         super().__init__()
@@ -207,9 +244,13 @@ class BinaryExpression():
 
         return "left:(left)operator:(operator)right:(right)".format( left=self.left, operator=self.operator, right=self.right )
 
-class PrefixExpression():
+##
+#
+#
+class PrefixExpression(Expression):
 
     def __init__(self, operator, right):
+        super().__init__()
         self.operator = operator
         self.right    = right
 
