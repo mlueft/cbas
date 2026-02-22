@@ -10,8 +10,13 @@ def main():
         r"/home/work/cbas/lib"
     ]
         
+
     pp = Preprocessor( outputFolder, libFolder)
     
+    inputFile   = "/home/work/cbas/examples/pp_macros.bas"
+    pp.process(inputFile)
+    
+    inputFile   = "/home/work/cbas/examples/pp_arithmetics.bas"
     pp.process(inputFile)
     
 main()

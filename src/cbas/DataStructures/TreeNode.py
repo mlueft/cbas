@@ -1,113 +1,123 @@
-import cbas.DataStructures.LinkedList
+import cbas.Events.EventManager
+import cbas.Events.TreeEvent
+import cbas.DataStructures.TraverseMode
 
-LinkedList = cbas.DataStructures.LinkedList.LinkedList
+TraverseMode = cbas.DataStructures.TraverseMode.TraverseMode
+EventManager = cbas.Events.EventManager.EventManager
+TreeEvent = cbas.Events.TreeEvent.TreeEvent
 
-class TreeNode(LinkedList):
+class TreeNode():
+    id = 0
 
     def __init__(self):
         super().__init__()
-        self.__parent = None
-        self.__firstChild = None
-
-    def bottomUp(self):
-
-        # We traverse all nodes first.
-        # So the tree is traversed bottom up.
-        # Arithmetic is resolved this way.
-        t = self.__first
-        while t:
-            if not t.isLeaf:
-                t.bottomUp()
-            t = t.next
-
-        #
-        # Call the optimizer
-        #
-
-        # then we traverse all leafs.
-        t = self.__first
-        while t:
-            if t.isLeaf:
-                t.bottomUp()
-            t = t.next
-
-    def topDown(self):
-
-        #
-        # Call the optimizer
-        #
-
-        # We traverse all leafs first.
-        t = self.__first
-        while t:
-            if t.isLeaf:
-                t.topDown()
-            t = t.next
-
-        # then we traverse all nodes.
-        t = self.__first
-        while t:
-            if not t.isLeaf:
-                t.topDown()
-            t = t.next
-
-    def outline(self):
-
-        #
-        # Call the optimizer
-        #
-
-        # We traverse all leafs first.
-        t = self.__first
-        while t:
-            t.outline()
-            t = t.next
-
-    def addNode(self,node):
-        if self.__firstChild == None:
-            self.__firstChild = node
-            last = self.__firstChild.last
-            if last != None:
-                last.insertAfter(node)
-            self.__firstChild.onRemoved.add(self._handleFirstRemoved)
-            return
         
-        self.__firstChild.onInsertedBefore.add(self._handleFirstInsertedBefore)
+        self.id = str(TreeNode.id)
+        TreeNode.id = TreeNode.id +1
+
+        self._isLeaf = False
+        self.indentation = 4
+
+        self.onReplace = EventManager()
 
     ##
     #
     #
-    def _handleFirstRemoved(self,ev):
-        node = ev.eventSource
-        node.onRemoved.remove(self._handleFirstRemoved)
-        node.onInsertedBefore.remove(self._handleFirstInsertedBefore)
-
-        self.__first = node.next
-        self.__first.onRemoved.add(self._handleFirstRemoved)
-        self.__first.onInsertedBefore.add(self._handleFirstInsertedBefore)
+    def __str__(self):
+        return "{}".format( type(self))
 
     ##
     #
     #
-    def _handleFirstInsertedBefore(self, ev):
-        if ev.eventSource == self.__first:
-            self.__first.onRemoved.remove(self._handleFirstRemoved)
-            self.__first.onInsertedBefore.remove(self._handleFirstInsertedBefore)
-
-            self.__first = self.__first.prev
-            self.__first.onRemoved.add(self._handleFirstRemoved)
-            self.__first.onInsertedBefore.add(self._handleFirstInsertedBefore)
-
-    @property
-    def parent(self):
-        return self.__parent
+    def _getNodes(self):
+        return []
     
-    @parent.setter
-    def parent(self, value):
-        if self.__parent == value:
-            return
-        self.__parent = value
-    
+    ##
+    #
+    #
     @property
     def isLeaf(self):
-        return self.__firstChild
+        return self._isLeaf
+    
+    ##
+    #
+    #
+    def debug(self,level=0):
+        print( "{:<4}:{}{}".format(self.id, " "*level*self.indentation, self) )
+        nodes = self._getNodes()
+        for t in nodes:
+            t.debug(level+1)
+
+    ##
+    #
+    #
+    def outline(self, handler):
+
+        #
+        # Call the optimizer
+        #
+        handler(self,TraverseMode.OUTLINE)
+
+        # We traverse all leafs first.
+        nodes = self._getNodes()
+        for t in nodes:
+            t.outline(handler)
+
+    ##
+    #
+    #
+    def bottomUp(self, handler):
+
+        # We traverse all leafs first.
+        nodes = self._getNodes()
+        for t in nodes:
+            if not t.isLeaf:
+                t.bottomUp(handler)
+
+        # then we traverse all nodes.
+        nodes = self._getNodes()
+        for t in nodes:
+            if t.isLeaf:
+                t.bottomUp(handler)
+
+        #
+        # Call the optimizer
+        #
+        handler(self,TraverseMode.BOTTOM_UP)
+
+    ##
+    #
+    #
+    def topDown(self, handler):
+
+        #
+        # Call the optimizer
+        #
+        handler(self,TraverseMode.TOP_DOWN)
+
+        # We traverse all leafs first.
+        nodes = self._getNodes()
+        for t in nodes:
+            if t.isLeaf:
+                t.topDown(handler)
+
+        # then we traverse all nodes.
+        nodes = self._getNodes()
+        for t in nodes:
+            if not t.isLeaf:
+                t.topDown(handler)
+
+    ##
+    #
+    #
+    def replace(self,replacement):
+        event = TreeEvent(self,replacement)
+        self.__onReplace(event)
+
+    ##
+    #
+    #
+    def __onReplace(self,event=None):
+        if event is None:
+            event = TreeEvent(self)
+        self.onReplace.provoke(event)

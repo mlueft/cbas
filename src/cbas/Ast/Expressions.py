@@ -4,18 +4,24 @@ import cbas.Parser.BindingPower
 import cbas.Events.EventManager
 import cbas.Events.Event
 import cbas.DataStructures.LinkedList
+import cbas.DataStructures.TreeNode
+import cbas.DataStructures.TraverseMode
 
+TraverseMode = cbas.DataStructures.TraverseMode.TraverseMode
 TokenTypes = cbas.Lexer.TokenTypes.TokenTypes
 Lookups = cbas.Parser.Lookups.Lookups
 BindingPower = cbas.Parser.BindingPower.BindingPower
 EventManager = cbas.Events.EventManager.EventManager
 Event = cbas.Events.Event.Event
 LinkedList = cbas.DataStructures.LinkedList.LinkedList
+TreeNode = cbas.DataStructures.TreeNode.TreeNode
 
 class ExpressionParser():
     
-    ##
-    #
+    ## 4
+    #  "BLA"
+    #  4.1
+    #  5.4+e3
     #
     @staticmethod
     def parsePrimaryExpression(parser):
@@ -24,36 +30,43 @@ class ExpressionParser():
         type = parser.currentTokenType
         
         if type == TokenTypes.INTEGER:
-            result = NumberExpression(int(parser.advance().code))
+            result = PrimaryExpression( "int", int(parser.advance().code) )
             parser.log("end:parsePrimaryExpression", "debug" )
             return result
         
         elif type == TokenTypes.FLOAT:
-            result = NumberExpression(float(parser.advance().code))
+            result = PrimaryExpression( "float", float(parser.advance().code))
             parser.log("end:parsePrimaryExpression", "debug" )
             return result
 
         elif type == TokenTypes.SIENTIFIC:
-            result = StringExpression(parser.advance().code)
+            result = PrimaryExpression( "string", parser.advance().code)
             parser.log("end:parsePrimaryExpression", "debug" )
             return result
 
         elif type == TokenTypes.STRING:
-            result = StringExpression(parser.advance().code)
+            result = PrimaryExpression( "string", parser.advance().code)
             parser.log("end:parsePrimaryExpression", "debug" )
+            return result
+
+        elif type == TokenTypes.BOOLEAN:
+            literal = parser.advance().code
+            result = PrimaryExpression( "boolean", literal.lower() == 'true')
+            parser.log("end:parsePrimaryExpression", "debug" )
+            return result
             
         elif type == TokenTypes.IDENTIFIER:
-            result = SymbolExpression(parser.advance().code)
+            result = PrimaryExpression( "symbol", parser.advance().code)
             parser.log("end:parsePrimaryExpression", "debug" )
             return result
 
         elif type == TokenTypes.LINENUMBER:
-            result = LabelExpression(parser.advance().code)
+            result = PrimaryExpression( "linenumber", parser.advance().code)
             parser.log("end:parsePrimaryExpression", "debug" )
             return result
         
         elif type == TokenTypes.COMMENT:
-            result = CommentExpression(parser.advance().code)
+            result = PrimaryExpression( "comment", parser.advance().code)
             parser.log("end:parsePrimaryExpression", "debug" )
             return result
         
@@ -83,13 +96,14 @@ class ExpressionParser():
             parser.log("end:parseExpression ... ", "debug" )
             return left
 
-        while parser.hasTokens and Lookups.bp[parser.currentTokenType] > bp:
+        while  Lookups.bp[parser.currentTokenType] > bp:
             tokenType = parser.currentTokenType
+            
             if tokenType not in Lookups.led:
                 raise ValueError("Led handler expected for token type ({})".format(TokenTypes.getString(tokenType)) )
+            
             ledFunction = Lookups.led[tokenType]
             left = ledFunction(parser,left,Lookups.bp[parser.currentTokenType])
-            parser.log("left =  '{}'".format(parser.currentToken.code) )
 
             # This is for linenumber/labels/eof
             if parser.currentTokenType not in Lookups.bp:
@@ -114,13 +128,14 @@ class ExpressionParser():
         parser.log("start:parseBinaryExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
 
         operatorToken = parser.advance()
-        right = ExpressionParser.parseExpression(parser, BindingPower.DEFAULT)
+        right = ExpressionParser.parseExpression(parser, bp)
 
         result = BinaryExpression(
             left,
-            operatorToken.code,
+            PrimaryExpression("op",operatorToken.code),
             right
         )
+
         parser.log("end:parseBinaryExpression", "debug" )
         return result
    
@@ -135,114 +150,128 @@ class ExpressionParser():
         right = ExpressionParser.parseExpression(parser,BindingPower.DEFAULT)
 
         result = PrefixExpression(
-            operatorToken,
+            PrimaryExpression("op", operatorToken.code),
             right
         )
+        
         parser.log("end:parsePrefixExpression", "debug" )
+        return result
+
+    ##
+    #
+    #
+    @staticmethod
+    def parseGroupingExpression(parser):
+        parser.log("start:parseGroupingExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
+
+        start = parser.advance()
+        expression = ExpressionParser.parseExpression(parser,BindingPower.DEFAULT)
+
+        result = GroupingExpression(
+            expression
+        )
+        parser.expect( TokenTypes.ROUNDCLOSE )
+
+        parser.log("end:parseGroupingExpression", "debug" )
         return result
 
 
 
-##
-#
-#
-class Expression(LinkedList):
-
-    def __init__(self):
-        super().__init__()
 
 
-##
-#
-#
-class NumberExpression(Expression):
-    
-    def __init__(self, value):
-        super().__init__()
-        self.value = value
 
-    def debug(self, indentation=0):
-        print ((" "*indentation)+"Number({})".format( str(self.value)))
+
+
+
+
+
+
+
+
+
+
+
 
 ##
 #
-#   
-class StringExpression(Expression):
-    
-    def __init__(self, value):
-        super().__init__()
-        self.value = value
-    
-    def debug(self, indentation=0):
-        print ((" "*indentation)+"String({})".format( str(self.value)))
+#
+class Expression(TreeNode):
 
-##
-# 
-#    
-class SymbolExpression(Expression):
-    
-    def __init__(self, value):
+    def __init__(self, value = None):
         super().__init__()
         self.value = value
 
-    def debug(self, indentation=0):
-        print ((" "*indentation)+"Symbol({})".format( str(self.value)))
+    def _getNodes(self):
+        return [self.value]
 
 ##
-# 
-#   
-class LabelExpression(Expression):
+#
+#
+class PrimaryExpression(Expression):
     
-    def __init__(self, value):
-        super().__init__()
-        self.value = value
+    def __init__(self, tag=None, value = None):
+        super().__init__(value)
+        self.tag = tag
+        self._isLeaf = True
 
-    def debug(self, indentation=0):
-        print ((" "*indentation)+"Label({})".format( str(self.value)))
+    def _getNodes(self):
+        return []
 
-##
-#
-#
-class CommentExpression(Expression):
+    def _debug(self,level=0):
+        print( "{:<4}:{}{} {}".format(self.id, " "*level*self.indentation, self.tag, self.value) )
+
+    def __str__(self):
+        return "{:<4} {}".format( self.tag, self.value)
     
-    def __init__(self, value):
-        super().__init__()
-        # if the value starts with 'REM' we remove it
-        if value.upper().startswith("REM"):
-            value = value[3:].strip()
-        
-        self.value = value
+    def outline(self, handler):
+        handler(self,TraverseMode.OUTLINE)
 
-    def debug(self, indentation=0):
-        print ((" "*indentation)+"Comment({})".format( str(self.value)))
+    def bottomUp(self, handler):
+        handler(self,TraverseMode.BOTTOM_UP)
+
+    def topDown(self, handler):
+        handler(self,TraverseMode.TOP_DOWN)
 
 ##
-#
+#   4+3
+#   4-3
+#   4*3
+#   ...
 # 
 class BinaryExpression(Expression):
 
-    def __init__(self,left,operator,right):
+    def __init__(self, left, operator, right):
         super().__init__()
-        self.left     = left
+
+        self.left = left
         self.operator = operator
-        self.right    = right
-
-    def debug(self, indentation=0):
-        print ((" "*indentation)+" => {}".format(self.operator))
+        self.right = right
         
-        print ((" "*indentation)+"left:")
-        if self.left is not None:
-            self.left.debug(indentation+4)
-        else:
-            print ((" "*(indentation+4))+"None!!!!!!!")
-        
-        print ((" "*indentation)+"right:")
-        if self.right is not None:
-            self.right.debug(indentation+4)
-        else:
-            print ((" "*(indentation+4))+"None!!!!!!!")
+        self.left.onReplace.add(self._hndReplaceLeft)
+        self.operator.onReplace.add(self._hndReplaceOperator)
+        self.right.onReplace.add(self._hndReplaceRight)
 
-        return "left:(left)operator:(operator)right:(right)".format( left=self.left, operator=self.operator, right=self.right )
+    def _hndReplaceLeft(self,ev):
+        #print("BinaryExpression::_hndReplaceLeft")
+        self.left.onReplace.remove(self._hndReplaceLeft)
+        self.left = ev.replacement
+        self.left.onReplace.add(self._hndReplaceLeft)
+
+    def _hndReplaceOperator(self,ev):
+        #print("BinaryExpression::_hndReplaceOperator")
+        self.operator.onReplace.remove(self._hndReplaceOperator)
+        self.operator = ev.replacement
+        self.operator.onReplace.add(self._hndReplaceOperator)
+
+    def _hndReplaceRight(self,ev):
+        #print("BinaryExpression::_hndReplaceRight")
+        self.right.onReplace.remove(self._hndReplaceRight)
+        self.right = ev.replacement
+        self.right.onReplace.add(self._hndReplaceRight)
+
+    def _getNodes(self):
+        return [self.left,self.operator,self.right]
+
 
 ##
 #
@@ -251,13 +280,39 @@ class PrefixExpression(Expression):
 
     def __init__(self, operator, right):
         super().__init__()
-        self.operator = operator
-        self.right    = right
-
-    def debug(self, indentation=0):
-        print ((" "*indentation)+" => {}".format(self.operator))
         
-        print ((" "*indentation)+"right:")
-        self.right.debug(indentation+4)
+        self.operator = operator
+        self.right = right
 
-        return "operator:(operator)right:(right)".format( operator=self.operator, right=self.right )
+        self.operator.onReplace.add(self._hndReplaceOperator)
+        self.right.onReplace.add(self._hndReplaceRight)
+
+    def _hndReplaceOperator(self,ev):
+        #print("PrefixExpression::_hndReplaceOperator")
+        self.operator.onReplace.remove(self._hndReplaceOperator)
+        self.operator = ev.replacement
+        self.operator.onReplace.add(self._hndReplaceOperator)
+
+    def _hndReplaceRight(self,ev):
+        #print("PrefixExpression::_hndReplaceRight")
+        self.right.onReplace.remove(self._hndReplaceRight)
+        self.right = ev.replacement
+        self.right.onReplace.add(self._hndReplaceRight)
+
+    def _getNodes(self):
+        return [self.operator,self.right]
+    
+##
+#
+#
+class GroupingExpression(Expression):
+
+    def __init__(self, expression):
+        super().__init__(expression)
+        self.value.onReplace.add(self._hndReplaceValue)
+
+    def _hndReplaceValue(self,ev):
+        #print("GroupingExpression::_hndReplaceValue")
+        self.value.onReplace.remove(self._hndReplaceValue)
+        self.value = ev.replacement
+        self.value.onReplace.add(self._hndReplaceValue)

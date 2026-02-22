@@ -1,6 +1,7 @@
 
 class TokenTypes():
 	_index = 0
+	BOOLEAN     =  _index;_index += 1
 	INTEGER     =  _index;_index += 1
 	FLOAT       =  _index;_index += 1
 	SIENTIFIC   =  _index;_index += 1
@@ -10,7 +11,7 @@ class TokenTypes():
 	FUNCTION    =  _index;_index += 1
 
 	ADD         = _index;_index += 1
-	MINUS       = _index;_index += 1
+	MINUS       = _index;_index += 1 # 8
 	MUL         = _index;_index += 1
 	DIV         = _index;_index += 1
 	EXPONENTIAL = _index;_index += 1
@@ -49,6 +50,7 @@ class TokenTypes():
 		"sientific":   SIENTIFIC,
 		"linenumber":  LINENUMBER,
 		"string":      STRING,
+		"boolean":     BOOLEAN,
 		"statement":   STATEMENT,
 		"function":    FUNCTION,
 		"add":         ADD,

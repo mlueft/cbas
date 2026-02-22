@@ -23,7 +23,7 @@ class Parser():
 		if message.lower()[0:4] == "end:":
 			self.indentation -= 4
 			
-		print( (" "*self.indentation)+message )
+		#print( (" "*self.indentation)+message )
 		
 		if message.lower()[0:6] == "start:":
 			self.indentation += 4
@@ -37,34 +37,29 @@ class Parser():
 		self.createLookupTables()
 		self.tokens = tokens
 		self.__first = None
+		statements = []
 		while self.hasTokens:
 			self.log("=========================================")
 			self.log("while hasToken ...")
 			self.log("=========================================")
-			if self.__first == None:
-				self.__first = StatementParser.parseStatement(self)
-			else:
-				self.__first.last.insertAfter( StatementParser.parseStatement(self) )
+			statements.append( StatementParser.parseStatement(self) )
 		
 		self.log("end:parsing()")
-		return BlockStatement(self.__first)
+		return BlockStatement(statements)
 
 	def createLookupTables(self):
 		Lookups.reset()
 
-		for i in self.config.tokens:
-
-			handler = Lookups.getHandler( i.type )
-			category = i.category
-			
-			if category == "led":
-				Lookups.registerLed( i.type, i.bindingpower, handler )
-			elif category == "nud":
-				Lookups.registerNud( i.type, handler )
-			elif category == "statement":
-				Lookups.registerStatement( i.type, handler )
+		for token in self.config.tokens:
+			#print( "register: {} {} {}".format(i.type,category,handler) )
+			if token.category == "led":
+				Lookups.registerLed( token.type, token.bindingpower, token.handler )
+			elif token.category == "nud":
+				Lookups.registerNud( token.type, token.handler )
+			elif token.category == "statement":
+				Lookups.registerStatement( token.type, token.handler )
 			else:
-				raise ValueError("Category for '{}' not found!".format( TokenTypes.getString(i.type) ))
+				raise ValueError("Category for '{}' not found!".format( TokenTypes.getString(token.type) ))
 		
 	@property
 	def currentToken(self):
@@ -73,7 +68,6 @@ class Parser():
 	@property
 	def currentTokenType(self):
 		return self.tokens[self.pos].type
-
 
 	@property
 	def hasTokens(self):
@@ -100,3 +94,4 @@ class Parser():
 		
 		return self.advance()
 	
+

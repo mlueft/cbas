@@ -1,21 +1,4 @@
 
-#define TEST
-
-#ifdef TEST
- test
- #else
-  else
-#endif
-
-#undefine TEST
-
-#ifdef TEST
- test
- #else
-  else
-#endif
-
-
 1 REM LEXER TEST PROGRAMM 200 ZEILEN
 2 A=0:B=1:C=2
 3 PRINT "START"

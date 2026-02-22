@@ -18,6 +18,15 @@ class Lexer():
         self.config          = None
         self._verbose        = False
         self._handlerList    = self.createHandlerList()
+        self.debug = False
+
+    ##
+    #
+    #
+    def log(self,message,type="log"):
+        if not self._verbose:
+            return
+        #print(message)
 
     ##
     #
@@ -65,6 +74,7 @@ class Lexer():
             TokenTypes.SIENTIFIC   :self.__defaultHandler,
             TokenTypes.LINENUMBER  :self.__defaultHandler,
             TokenTypes.STRING      :self.__stringHandler,
+            TokenTypes.BOOLEAN     :self.__defaultHandler,
             TokenTypes.STATEMENT   :self.__defaultHandler,
             TokenTypes.FUNCTION    :self.__defaultHandler,
             
@@ -104,14 +114,6 @@ class Lexer():
             TokenTypes.EOF         :self.__defaultHandler
         }
     
-    ##
-    #
-    #
-    def log(self,message,type="log"):
-        if not self._verbose:
-            return
-        print(message)
-
     ##
     #
     #
@@ -198,10 +200,11 @@ class Lexer():
             self.firstToken.onRemoved.add(self._handleFirstRemoved)
             self.firstToken.onInsertedBefore.add(self._handleFirstInsertedBefore)
         
-        if self.currentToken == None:
+        if self.currentToken is None:
             self.currentToken = token
         else:
-            self.currentToken = self.currentToken.insertAfter(token)
+            self.currentToken.insertAfter(token)
+            self.currentToken = token
 
     ##
     #
@@ -274,3 +277,4 @@ class Lexer():
             result.append(token.generateListToken())
             token = token.next
         return result
+    

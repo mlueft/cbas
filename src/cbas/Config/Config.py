@@ -1,18 +1,33 @@
 from operator import attrgetter
 
-import cbas.Lexer.TokenTypes
-import cbas.Parser.BindingPower
-import cbas.Lexer.ConfigToken
-import cbas.Parser.ConfigToken
 import cbas.Config.LexerConfig
 import cbas.Config.ParserConfig
+import cbas.Config.AstOptimizerConfig
 
-TokenTypes = cbas.Lexer.TokenTypes.TokenTypes
-BindingPower = cbas.Parser.BindingPower.BindingPower
-LexerConfigToken = cbas.Lexer.ConfigToken.ConfigToken
-LexerConfig = cbas.Config.LexerConfig.LexerConfig
-ParserConfigToken = cbas.Parser.ConfigToken.ConfigToken
-ParserConfig = cbas.Config.ParserConfig.ParserConfig
+import cbas.Lexer.TokenTypes
+import cbas.Lexer.ConfigToken
+
+import cbas.Parser.BindingPower
+import cbas.Parser.ConfigToken
+
+import cbas.Ast.Expressions
+import cbas.Ast.Statements
+
+import cbas.AstOptimizer.AstOptimizer
+import cbas.AstOptimizer.ConfigToken
+
+TokenTypes          = cbas.Lexer.TokenTypes.TokenTypes
+BindingPower        = cbas.Parser.BindingPower.BindingPower
+LexerConfigToken    = cbas.Lexer.ConfigToken.ConfigToken
+LexerConfig         = cbas.Config.LexerConfig.LexerConfig
+ParserConfigToken   = cbas.Parser.ConfigToken.ConfigToken
+ParserConfig        = cbas.Config.ParserConfig.ParserConfig
+ExpressionParser    = cbas.Ast.Expressions.ExpressionParser
+StatementParser     = cbas.Ast.Statements.StatementParser
+ArithmeticOptimizer = cbas.AstOptimizer.AstOptimizer.ArithmeticOptimizer
+LogicOptimizer      = cbas.AstOptimizer.AstOptimizer.LogicOptimizer
+AstOptimizerConfig  = cbas.Config.AstOptimizerConfig.AstOptimizerConfig
+AstOptimizerToken   = cbas.AstOptimizer.ConfigToken.ConfigToken
 
 class Config():
 
@@ -26,6 +41,10 @@ class Config():
     V7           = 7
     V10          = 8
 
+    # =============================================
+    # LEXER
+    # =============================================
+
     # Order is important
     lexerTokens = {
 
@@ -34,6 +53,7 @@ class Config():
         "literalSientific":     { "order":   10, "type": TokenTypes.SIENTIFIC,   "expression": "(?i)-?[0-9]+[.]?[0-9]*e-*[0-9]+[.]?[0-9]*" },
         "literalFloat":         { "order":   20, "type": TokenTypes.FLOAT,       "expression": "[0-9]+[.][0-9]*" },
         "literalInt":           { "order":   40, "type": TokenTypes.INTEGER,     "expression": "[0-9]+[%]?" },
+        "literalBoolean":       { "order":   41, "type": TokenTypes.BOOLEAN,     "expression": "(?i)(true|false)" },
         "literalString":        { "order":   50, "type": TokenTypes.STRING,      "expression": "(?i)\"[^\"]*\"" },
 
         "comment":              { "order":  100, "type": TokenTypes.COMMENT,     "expression": "(?i)rem[^:]*" },
@@ -265,6 +285,7 @@ class Config():
         "literalFloat":         [ 1,    1,    1,    1,    1,    1,    1,    1,    1    ],
         "literalInt":           [ 1,    1,    1,    1,    1,    1,    1,    1,    1    ],
         "literalString":        [ 0,    1,    1,    1,    1,    1,    1,    1,    1    ],
+        "literalBoolean":       [ 0,    1,    0,    0,    0,    0,    0,    0,    0    ],
 
         "abs":                  [ 0,    0,    1,    1,    1,    1,    1,    1,    1    ],
         "append":               [ 0,    0,    0,    0,    1,    1,    1,    1,    1    ],
@@ -496,6 +517,11 @@ class Config():
 
     }
 
+
+    # =============================================
+    # PARSER
+    # =============================================
+
     # Order is important
     parserTokens = {
         
@@ -506,47 +532,49 @@ class Config():
         # 2 - Assignment
 
         # 3 - Logical
-        "logicAnd":           { "category": "led", "bindingpower": BindingPower.LOGICAL,       "type": TokenTypes.AND        },
-        "logicOr":            { "category": "led", "bindingpower": BindingPower.LOGICAL,       "type": TokenTypes.OR         },
-        "logicNot":           { "category": "led", "bindingpower": BindingPower.LOGICAL,       "type": TokenTypes.NOT        },
+        "logicAnd":           { "category": "led", "bindingpower": BindingPower.LOGICAL,       "type": TokenTypes.AND,          "handler": ExpressionParser.parseBinaryExpression    },
+        "logicOr":            { "category": "led", "bindingpower": BindingPower.LOGICAL,       "type": TokenTypes.OR,           "handler": ExpressionParser.parseBinaryExpression    },
+        "logicNot":           { "category": "led", "bindingpower": BindingPower.LOGICAL,       "type": TokenTypes.NOT,          "handler": ExpressionParser.parseBinaryExpression    },
 
         # 4 - Relational
-        "eq":                 { "category": "led", "bindingpower": BindingPower.RELATIONAL,    "type": TokenTypes.EQ         },
-        "compareNeq":         { "category": "led", "bindingpower": BindingPower.RELATIONAL,    "type": TokenTypes.NEQ        },
-        "compareLessEqual":   { "category": "led", "bindingpower": BindingPower.RELATIONAL,    "type": TokenTypes.LE         },
-        "compareGraterEqual": { "category": "led", "bindingpower": BindingPower.RELATIONAL,    "type": TokenTypes.GE         },
-        "compareLess":        { "category": "led", "bindingpower": BindingPower.RELATIONAL,    "type": TokenTypes.LESS       },
-        "compareGreater":     { "category": "led", "bindingpower": BindingPower.RELATIONAL,    "type": TokenTypes.MORE       },
+        "compareEQ":          { "category": "led", "bindingpower": BindingPower.RELATIONAL,    "type": TokenTypes.EQ,           "handler": ExpressionParser.parseBinaryExpression    },
+        "compareNeq":         { "category": "led", "bindingpower": BindingPower.RELATIONAL,    "type": TokenTypes.NEQ,          "handler": ExpressionParser.parseBinaryExpression    },
+        "compareLessEqual":   { "category": "led", "bindingpower": BindingPower.RELATIONAL,    "type": TokenTypes.LE,           "handler": ExpressionParser.parseBinaryExpression    },
+        "compareGraterEqual": { "category": "led", "bindingpower": BindingPower.RELATIONAL,    "type": TokenTypes.GE,           "handler": ExpressionParser.parseBinaryExpression    },
+        "compareLess":        { "category": "led", "bindingpower": BindingPower.RELATIONAL,    "type": TokenTypes.LESS,         "handler": ExpressionParser.parseBinaryExpression    },
+        "compareGreater":     { "category": "led", "bindingpower": BindingPower.RELATIONAL,    "type": TokenTypes.MORE,         "handler": ExpressionParser.parseBinaryExpression    },
 
         # 5 - Additive
-        "arithmeticAdd":      { "category": "led", "bindingpower": BindingPower.ADDITIVE,      "type" :TokenTypes.ADD        },
-        "arithmeticMinus":    { "category": "led", "bindingpower": BindingPower.ADDITIVE,      "type": TokenTypes.MINUS      },
+        "arithmeticAdd":      { "category": "led", "bindingpower": BindingPower.ADDITIVE,      "type" :TokenTypes.ADD,          "handler": ExpressionParser.parseBinaryExpression    },
+        "arithmeticMinus":    { "category": "led", "bindingpower": BindingPower.ADDITIVE,      "type": TokenTypes.MINUS,        "handler": ExpressionParser.parseBinaryExpression    },
 
         # 6 - Multiplicative
-        "arithmeticMul":      { "category": "led", "bindingpower": BindingPower.MULTIPLICATIVE, "type": TokenTypes.MUL       },
-        "arithmeticDiv":      { "category": "led", "bindingpower": BindingPower.MULTIPLICATIVE, "type": TokenTypes.DIV       },
-        "arithmeticExponent": { "category": "led", "bindingpower": BindingPower.MULTIPLICATIVE, "type": TokenTypes.EXPONENTIAL },
+        "arithmeticMul":      { "category": "led", "bindingpower": BindingPower.MULTIPLICATIVE, "type": TokenTypes.MUL,         "handler": ExpressionParser.parseBinaryExpression    },
+        "arithmeticDiv":      { "category": "led", "bindingpower": BindingPower.MULTIPLICATIVE, "type": TokenTypes.DIV,         "handler": ExpressionParser.parseBinaryExpression    },
+        "arithmeticExponent": { "category": "led", "bindingpower": BindingPower.MULTIPLICATIVE, "type": TokenTypes.EXPONENTIAL, "handler": ExpressionParser.parseBinaryExpression    },
 
         # 7 - literals & symbols
-        "literalScientific":  { "category": "nud", "bindingpower": 0,                           "type": TokenTypes.SIENTIFIC  },
-        "literalFloat":       { "category": "nud", "bindingpower": 0,                           "type": TokenTypes.FLOAT      },
-        "literalInt":         { "category": "nud", "bindingpower": 0,                           "type": TokenTypes.INTEGER    },
-        "literalString":      { "category": "nud", "bindingpower": 0,                           "type": TokenTypes.STRING     },
-        "identifier":         { "category": "nud", "bindingpower": 0,                           "type": TokenTypes.IDENTIFIER },
-        "lineNumber":         { "category": "nud", "bindingpower": 0,                           "type": TokenTypes.LINENUMBER },
-        "comment":            { "category": "nud", "bindingpower": 0,                           "type": TokenTypes.COMMENT    },
+        "literalScientific":  { "category": "nud", "bindingpower": 0,                           "type": TokenTypes.SIENTIFIC,   "handler": ExpressionParser.parsePrimaryExpression   },
+        "literalFloat":       { "category": "nud", "bindingpower": 0,                           "type": TokenTypes.FLOAT,       "handler": ExpressionParser.parsePrimaryExpression   },
+        "literalInt":         { "category": "nud", "bindingpower": 0,                           "type": TokenTypes.INTEGER,     "handler": ExpressionParser.parsePrimaryExpression   },
+        "literalString":      { "category": "nud", "bindingpower": 0,                           "type": TokenTypes.STRING,      "handler": ExpressionParser.parsePrimaryExpression   },
+        "literalBoolean":     { "category": "nud", "bindingpower": 0,                           "type": TokenTypes.BOOLEAN,     "handler": ExpressionParser.parsePrimaryExpression   },
+        "identifier":         { "category": "nud", "bindingpower": 0,                           "type": TokenTypes.IDENTIFIER,  "handler": ExpressionParser.parsePrimaryExpression   },
+        "lineNumber":         { "category": "nud", "bindingpower": 0,                           "type": TokenTypes.LINENUMBER,  "handler": ExpressionParser.parsePrimaryExpression   },
+        "comment":            { "category": "nud", "bindingpower": 0,                           "type": TokenTypes.COMMENT,     "handler": ExpressionParser.parsePrimaryExpression   },
         
         # 8 - unary & prefix
-        "unary":              { "category": "nud", "bindingpower": 0,                           "type": TokenTypes.MINUS      },
+        "unary":              { "category": "nud", "bindingpower": 0,                           "type": TokenTypes.MINUS,       "handler": ExpressionParser.parsePrefixExpression    },
 
         # 9 - call 
 
         # 10 - member / computed & call
 
         # grouping expr
+        "grouping":           { "category": "nud", "bindingpower": 0,                           "type": TokenTypes.ROUNDOPEN,   "handler": ExpressionParser.parseGroupingExpression  },
 
 
-        "eof":                { "category": "nud", "bindingpower": 0,                           "type": TokenTypes.EOF        }
+        "eof":                { "category": "nud", "bindingpower": 0,                           "type": TokenTypes.EOF,         "handler": ExpressionParser.parseEOFExpression       }
     }
 
     parserConfig = {
@@ -556,7 +584,7 @@ class Config():
         "logicAnd":             [ 0,    1,    1,    1,    1,    1,    1,    1,    1    ],
         "logicOr":              [ 0,    1,    1,    1,    1,    1,    1,    1,    1    ],
         "logicNot":             [ 0,    1,    1,    1,    1,    1,    1,    1,    1    ],
-        "eq":                   [ 0,    1,    1,    1,    1,    1,    1,    1,    1    ],
+        "compareEQ":            [ 0,    1,    1,    1,    1,    1,    1,    1,    1    ],
         "compareNeq":           [ 0,    1,    1,    1,    1,    1,    1,    1,    1    ],
         "compareLessEqual":     [ 0,    1,    1,    1,    1,    1,    1,    1,    1    ],
         "compareGraterEqual":   [ 0,    1,    1,    1,    1,    1,    1,    1,    1    ],
@@ -566,16 +594,41 @@ class Config():
         "arithmeticMinus":      [ 1,    1,    1,    1,    1,    1,    1,    1,    1    ],
         "arithmeticMul":        [ 1,    1,    1,    1,    1,    1,    1,    1,    1    ],
         "arithmeticDiv":        [ 1,    1,    1,    1,    1,    1,    1,    1,    1    ],
-        "arithmeticExponent":   [ 1,    1,    1,    1,    1,    1,    1,    1,    1    ],
+        "arithmeticExponent":   [ 1,    1,    1,    1,    1,    1,    1,    1,    1    ], # not yet implemented
         "eof":                  [ 1,    0,    1,    1,    1,    1,    1,    1,    1    ],
-        "literalScientific":    [ 1,    1,    1,    1,    1,    1,    1,    1,    1    ],
+        "literalScientific":    [ 1,    0,    1,    1,    1,    1,    1,    1,    1    ],
         "literalFloat":         [ 1,    1,    1,    1,    1,    1,    1,    1,    1    ],
         "literalInt":           [ 1,    1,    1,    1,    1,    1,    1,    1,    1    ],
         "literalString":        [ 0,    1,    1,    1,    1,    1,    1,    1,    1    ],
+        "literalBoolean":       [ 0,    1,    0,    0,    0,    0,    0,    0,    0    ],
         "identifier":           [ 0,    1,    1,    1,    1,    1,    1,    1,    1    ],
         "lineNumber":           [ 0,    0,    1,    1,    1,    1,    1,    1,    1    ],
         "comment":              [ 0,    0,    1,    1,    1,    1,    1,    1,    1    ],
-        "unary":                [ 1,    1,    1,    1,    1,    1,    1,    1,    1    ]
+        "unary":                [ 1,    1,    1,    1,    1,    1,    1,    1,    1    ],
+        "grouping":             [ 1,    1,    1,    1,    1,    1,    1,    1,    1    ]
+    }
+
+
+    # =============================================
+    # LEXER OPTIMIZER
+    # =============================================
+
+    # =============================================
+    # AST OPTIMIZER
+    # =============================================
+
+    astOptimizerConfigTokens = {
+        "arithmetic": ArithmeticOptimizer,
+        "logical"   : LogicOptimizer
+    }
+
+    astOptimizerConfig = {
+        # ------------------------------------------------------------------
+        #                         AR    PP    V2    v3.5  v3.6  v4    v4+   v7    v10
+        # ------------------------------------------------------------------
+        "arithmetic":             [ 1,    1,    1,    1,    1,    1,    1,    1,    1    ],
+        "logical":                [ 0,    1,    1,    1,    1,    1,    1,    1,    1    ],
+
     }
 
     def getLexerToken(self, token):
@@ -599,15 +652,26 @@ class Config():
                         token["bindingpower"],
                         token["type"],
                         token["category"],
+                        token["handler"],
                     )
 
     def getParserConfig(self,index):
         result = ParserConfig()
-
-        for key in Config.parserConfig.keys():
+        keys = Config.parserConfig.keys()
+        for key in keys:
             if Config.parserConfig[key][index] == 1:
+                #print(key)
                 result.tokens.append(self.getParserToken(self.parserTokens[key]))
 
         result.tokens = sorted(result.tokens, key=attrgetter('bindingpower'))
         
+        return result
+
+    def getAstOptimizerConfig(self, index):
+        result = AstOptimizerConfig()
+        keys = Config.astOptimizerConfig.keys()
+        for key in keys:
+            if Config.astOptimizerConfig[key][index] == 1:
+                #print(key)
+                result.handlers.append(self.astOptimizerConfigTokens[key])
         return result

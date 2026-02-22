@@ -1,9 +1,6 @@
 
 class ConfigToken():
-    def __init__(self,bp,type,category,handler):
-        self.bindingpower = bp
-        self.type         = type
-        self.category     = category
+    def __init__(self,handler):
         self.handler      = handler
 
     def __str__(self):

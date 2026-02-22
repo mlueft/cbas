@@ -8,7 +8,6 @@ import cbas.DataStructures.TreeNode
 
 Lookups = cbas.Parser.Lookups.Lookups
 BindingPower = cbas.Parser.BindingPower.BindingPower
-Lookups = cbas.Parser.Lookups.Lookups
 ExpressionParser = cbas.Ast.Expressions.ExpressionParser
 EventManager = cbas.Events.EventManager.EventManager
 Event = cbas.Events.Event.Event
@@ -40,69 +39,84 @@ class StatementParser():
         expression = ExpressionParser.parseExpression( parser, 0)
         #p.expect(TokenTypes.SEMICOLON)
 
+        result = expression
+
         parser.log("end:parseStatement", "debug" )
-        return ExpressionStatement(expression)
+        return result
         
-    ##
-    #
-    #
-    @staticmethod
-    def parseCommentStatement(parser):
-        parser.log("start:parseCommentStatement ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
-        token = parser.currentToken
-
-        expression = ExpressionParser.parseExpression( parser, 0)
-
-        parser.log("end:parseCommentStatement", "debug" )
-        return CommentStatement(token.code)
-    
         
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ##
 #
 #
 class Statement(TreeNode):
     
-    def __init__(self):
+    def __init__(self, value = None):
         super().__init__()
+        self.value = value
+
 
 ##
-#
+# {
+#  statement0
+#  statement1
+#  ...
+# }
 #
 class BlockStatement(Statement):
 
-    def __init__(self, first):
+    def __init__(self, statements):
         super().__init__()
-        self.addNode(first)
-    
-    def debug(self, indentation=0):
-        print((" "*indentation)+"Blockstatement:")
-        t = self.first
-        while t:
-            t.debug(indentation+4)
-            t = t.next
+        self.statements = statements
+        for s in self.statements:
+            s.onReplace.add(self._hndReplaceLeft)
 
-##
-#
-#    
+    def _hndReplaceLeft(self,ev):
+        #print("BlockStatement::_hndReplaceLeft")
+        for i,v in enumerate(self.statements):
+            if ev.eventSource == v:
+                self.statements[i].onReplace.remove(self._hndReplaceLeft)
+                self.statements[i] = ev.replacement
+                self.statements[i].onReplace.add(self._hndReplaceLeft)
+                return
+
+
+    def _getNodes(self):
+        return self.statements
+
+
+## expression 
+# 4+6
+# 4-6
+# ...
 class ExpressionStatement(Statement):
 
-    def __init__(self, expression):
+    def __init__(self, statement):
         super().__init__()
-        self.addNode(expression)
+        self.statement = statement
         
-    def debug(self, indentation=0):
-        print ((" "*indentation)+"ExpressionStatement:")
-        self.expression.debug(indentation+4)
+        self.statement.onReplace.add(self._hndReplace)
 
-##
-#
-#
-class CommentStatement(Statement):
+    def _hndReplace(self,ev):
+        #print("ExpressionStatement::_hndReplace")
+        self.statement.onReplace.remove(self._hndReplace)
+        self.statement = ev.replacement
+        self.statement.onReplace.add(self._hndReplace)
 
-    def __init__(self, value):
-        super().__init__()
-        self.value = value
-        
-    def debug(self, indentation=0):
-        print ((" "*indentation)+"CommentStatement:")
-        self.value.debug(indentation+4)
+    def _getNodes(self):
+        return self.statement

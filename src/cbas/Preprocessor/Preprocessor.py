@@ -1,6 +1,12 @@
 import io
 import os
 
+import cbas.Compiler.Compiler
+import cbas.Compiler.SymbolTable
+
+Compiler = cbas.Compiler.Compiler.Compiler
+SymbolTable = cbas.Compiler.SymbolTable.SymbolTable
+
 class Preprocessor():
 
     INCLUDE  = "#include"
@@ -11,8 +17,10 @@ class Preprocessor():
     IFNDEF   = "#ifndef"
     ELSE     = "#else"
     ENDIF    = "#endif"
+    IF       = "#if"
     
     def __init__(self, outputFolder, libFolders = [] ):
+        self.CONFIGID = 1
         self.keepindentation = False
         self.outputFolder = outputFolder
         self.libFolders   = libFolders
@@ -24,11 +32,12 @@ class Preprocessor():
             Preprocessor.IFDEF:    self.handleIfdef,
             Preprocessor.IFNDEF:   self.handleIfNdef,
             Preprocessor.ELSE:     self.handleElse,
-            Preprocessor.ENDIF:    self.handleEndif
+            Preprocessor.ENDIF:    self.handleEndif,
+            Preprocessor.IF:       self.handleIf
         }
         self.indentation = ""
         self.writeLine = True
-        self.symbolTable = {}
+        self.symbolTable = SymbolTable()
         
     def process(self, fileName):
         outputFileName = os.path.join( self.outputFolder,os.path.basename(fileName) )
@@ -36,6 +45,9 @@ class Preprocessor():
             with io.open(outputFileName, "w", encoding="utf-8") as outputfile:
                 self._process(outputfile,inputfile)
 
+    ## Returns the handler to the pp directive in line.
+    #
+    #
     def getHandler(self, line):
     
         line = line.strip()
@@ -47,6 +59,10 @@ class Preprocessor():
 
         return self.commandHandlers[command]
 
+    ## Returns a list of strings
+    #  represensting all Parameters
+    #  to a pp directive.
+    #
     def getParameters(self,line):
         
         result = []
@@ -64,23 +80,17 @@ class Preprocessor():
             p = p.strip("\"")
             result.append( p )
         
-        print(result)
-        
         return result
 
+    ## Returns the indentation string
+    #  of the line.
+    #
     def getIndentation(self, line):
         if not self.keepindentation:
             return ""
         
         pos = line.find("#")
         return line[:pos]
-        
-    def _replaceSymbol(self,line):
-        
-        for s in self.symbolTable:
-            line = line.replace(s,self.symbolTable[s] )
-            
-        return line
         
     def _process(self, outputStream, inputStream, indentation = ""):
     
@@ -91,7 +101,7 @@ class Preprocessor():
                 handler(outputStream, line)
             else:
                 if self.writeLine:
-                    outputStream.write(indentation+self._replaceSymbol(line) )
+                    outputStream.write(indentation+self.symbolTable.replaceSymbols(line) )
             
             line = inputStream.readline()
 
@@ -100,8 +110,12 @@ class Preprocessor():
     #
     def handleInclude(self, outputStream, line  ):
     
-        self.indentation += self.getIndentation(line)
+        self.indentation = ""
+        if self.keepindentation:
+            self.indentation += self.getIndentation(line)
+
         parameters = self.getParameters(line)
+        
         # looking for the include file.
         for f in self.libFolders:
             includeFile = os.path.join(f,parameters[0])
@@ -126,35 +140,60 @@ class Preprocessor():
             self.keepindentation = value.lower() == "true"
             
         else:
-            raise ValueError("Command {} not recognized!".format(cmd) )
+            raise ValueError("Config command {} not recognized!".format(cmd) )
             
     ##
     #
     #
     def handleDefine(self, outputStream, line  ):
-        parameters = self.getParameters(line)
 
-        assignee = parameters[0]
-        if assignee not in self.symbolTable:
-            self.symbolTable[assignee] = ""
+        line = line.lstrip()
+        line = line.rstrip("\n")
 
-        if len(parameters)==1: return
+        # We remove the '#define' string
+        line = line[len(Preprocessor.DEFINE):].lstrip()
+
+        # We extract the macro name
+        # The macro name ends at space or '('
+        macroName = ""
+        hasParams = False
+        params = []
+        while True and len(line) > 0:
+            c = line[0]
             
-        value = parameters[1]
-        self.symbolTable[assignee] = value
-        
-        #TODO: sort symbolTable by key length desc!
+            if c == " ":
+                # if the macro name ends with ' ' it's object like.
+                break
+
+            if c == "(":
+                # If the macro name ends with '(' it's function like.
+                hasParams = True
+                break
+
+            macroName += c
+
+            line = line[1:]
+
+        if hasParams:
+            paramString = line[:line.find(")")+1].strip()
+            line        = line[len(paramString):]
+
+            paramString = paramString[1:-1].strip()
+
+            params = paramString.split(",")
+            for i,v in enumerate(list(params)):
+                params[i] = v.strip()
+
+        self.symbolTable.addSymbol( macroName, line.lstrip(), params )
         
     ##
     #
     #
     def handleUndefine(self, outputStream, line  ):
         parameters = self.getParameters(line)
-
         assignee = parameters[0]
-        if assignee in self.symbolTable:
-            del self.symbolTable[assignee]
-            
+        self.symbolTable.removeSymbol(assignee)
+
     ##
     #
     #
@@ -162,7 +201,7 @@ class Preprocessor():
         parameters = self.getParameters(line)
 
         assignee = parameters[0]
-        if assignee in self.symbolTable:
+        if self.symbolTable.symbolExists(assignee):
             self.writeLine = True
         else:
             self.writeLine = False
@@ -185,3 +224,20 @@ class Preprocessor():
     #       
     def handleEndif(self, outputStream, line  ):
             self.writeLine = True
+
+    ##
+    #
+    #
+    def handleIf(self, outputStream, line  ):
+        expr = line[len(Preprocessor.IF):].strip()
+
+        expr = self.symbolTable.replaceSymbols(expr)
+
+        compiler = Compiler()
+        result = compiler.compileExpression(expr, self.CONFIGID )
+
+        if len(result.statements) != 1:
+            raise ValueError("If-Condition couldn't be evaluated!: "+line)
+
+        self.writeLine = result.statements[0].value
+
