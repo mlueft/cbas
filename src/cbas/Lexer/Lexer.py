@@ -9,24 +9,23 @@ ChainToken = cbas.Lexer.Tokens.ChainToken
 class Lexer():
 
     def __init__(self):
+        self.debug           = False
         self.currentToken    = None
         self.firstToken      = None
-        self.__line          = 0
+        self.line            = 0
         self.pos             = 0
-        self.__markLinestart = False
-        self.__markLineend   = False
         self.config          = None
-        self._verbose        = False
-        self._handlerList    = self.createHandlerList()
         self.debug = False
+        # 0 => = is assignment
+        # 1 => = is EQ
+        self.mode = 0
 
     ##
     #
     #
     def log(self,message,type="log"):
-        if not self._verbose:
-            return
-        #print(message)
+        if self.debug:
+            print(message)
 
     ##
     #
@@ -55,70 +54,18 @@ class Lexer():
     ##
     #
     #
-    def createUniqueToken(self,type=0, pos=0):
-        return ChainToken("",self.__line+1,self.pos+1,type)
+    def getTokenList(self):
+        result = []
+        token = self.firstToken
+        while token:
+            result.append(token.generateListToken())
+            token = token.next
+        return result
     
     ##
     #
     #
-    def createToken(self,match,expression):
-        return ChainToken(match[0],self.__line+1,self.pos+1,expression.type)
-
-    ##
-    #
-    #
-    def createHandlerList(self):
-        return {
-            TokenTypes.INTEGER     :self.__defaultHandler,
-            TokenTypes.FLOAT       :self.__defaultHandler,
-            TokenTypes.SIENTIFIC   :self.__defaultHandler,
-            TokenTypes.LINENUMBER  :self.__defaultHandler,
-            TokenTypes.STRING      :self.__stringHandler,
-            TokenTypes.BOOLEAN     :self.__defaultHandler,
-            TokenTypes.STATEMENT   :self.__defaultHandler,
-            TokenTypes.FUNCTION    :self.__defaultHandler,
-            
-            TokenTypes.ADD         :self.__defaultHandler,
-            TokenTypes.MINUS       :self.__defaultHandler,
-            TokenTypes.MUL         :self.__defaultHandler,
-            TokenTypes.DIV         :self.__defaultHandler,
-            TokenTypes.EXPONENTIAL :self.__defaultHandler,
-            
-            TokenTypes.EQ          :self.__defaultHandler,
-            TokenTypes.NEQ         :self.__defaultHandler,
-            TokenTypes.LE          :self.__defaultHandler,
-            TokenTypes.GE          :self.__defaultHandler,
-            TokenTypes.LESS        :self.__defaultHandler,
-            TokenTypes.MORE        :self.__defaultHandler,
-            
-            TokenTypes.AND         :self.__defaultHandler,
-            TokenTypes.OR          :self.__defaultHandler,
-            TokenTypes.NOT         :self.__defaultHandler,
-   
-            TokenTypes.CURLYOPEN   :self.__defaultHandler,
-            TokenTypes.CURLYCLOSE  :self.__defaultHandler,
-            TokenTypes.ROUNDOPEN   :self.__defaultHandler,
-            TokenTypes.ROUNDCLOSE  :self.__defaultHandler,
-            
-            TokenTypes.SEMICOLON   :self.__defaultHandler,
-            TokenTypes.COLON       :self.__defaultHandler,
-            
-            TokenTypes.COMMA       :self.__defaultHandler,
-            TokenTypes.COMMENT     :self.__defaultHandler,
-            TokenTypes.IGNORE      :self.__ignoreHandler,
-            TokenTypes.LINESTART   :self.__defaultHandler,
-            TokenTypes.LINEEND     :self.__defaultHandler,
-            TokenTypes.IDENTIFIER  :self.__defaultHandler,
-            TokenTypes.WHITESPACE  :self.__ignoreHandler,
-            
-            TokenTypes.EOF         :self.__defaultHandler
-        }
-    
-    ##
-    #
-    #
-    def tokenize(self,file):
-
+    def tokenizeFile(self,file):
         if self.config is None:
             raise ValueError("Lexer config not set!")
 
@@ -128,14 +75,15 @@ class Lexer():
             while line:
                 line = line.strip("\n")
 
-                self._tokenizeLine(line)
+                Tokenizer.tokenizeLine(self,line)
 
-                self.log("", "verbose")
+                self.log("", "debug")
                 line = source.readline()
-                self.__line += 1
-                
-            token = self.createUniqueToken(TokenTypes.EOF, self.pos)
-            self.appendToken(token)
+                self.line += 1
+            
+            if self.config.markEOF:
+                token = Tokenizer.createUniqueToken(self,TokenTypes.EOF, self.pos)
+                self.appendToken(token)
             
         return 0
 
@@ -145,48 +93,10 @@ class Lexer():
     def tokenizeLine(self,line):
         if self.config is None:
             raise ValueError("Lexer config not set!")
-        self._tokenizeLine(line)
+        Tokenizer.tokenizeLine(self,line)
 
-        token = self.createUniqueToken(TokenTypes.EOF, self.pos)
-        self.appendToken(token)
-
-        return 0
-
-    ##
-    #
-    #
-    def _tokenizeLine(self, line):
-     
-        if self.config.markLinestart:
-            token = self.createUniqueToken(TokenTypes.LINESTART,0)
-            self.appendToken(token)
-
-        self.pos = 0
-
-        while self.pos < len(line):
-
-            self.log( "{}".format(line), "verbose")
-
-            while True or self.pos < len(line):
-                
-                #self.verbose("start scanning ...")
-                restart = True
-                while restart:
-                    restart = False
-                    for expression in self.config.tokens:
-                        if self.testExpression(line,expression) and self.pos < len(line):
-                            restart=True
-                            break
-
-                # Here we have reached a code that we can't parse.
-                # So we skip the rest of the line.
-                if self.pos < len(line):
-                    raise ValueError( "Syntax error @ {}:{}".format(self.__line, self.pos) )
-
-                break
-
-        if self.config.markLineend:
-            token = self.createUniqueToken(TokenTypes.LINEEND, self.pos)
+        if self.config.markEOF:
+            token = Tokenizer.createUniqueToken(self, TokenTypes.EOF, self.pos)
             self.appendToken(token)
 
         return 0
@@ -209,72 +119,285 @@ class Lexer():
     ##
     #
     #
-    def testExpression(self,line,expression):
-        #self.verbose( "'{}'  '{}' @{}".format(line, expression.expression, self.pos) )
+    def getHandler(self,expression):
+        
+        for h in self.config.tokens:
+            if expression.type ==h.type:
+                return h.handler
+
+        raise ValueError("No handler defined for '{}'".format( TokenTypes.getString(expression.type)))
+
+
+
+
+
+
+class Tokenizer():
+
+
+    ##
+    #
+    #
+    @staticmethod
+    def __createHandlerList():
+        return {
+            TokenTypes.INTEGER     :Tokenizer.defaultHandler,
+            TokenTypes.FLOAT       :Tokenizer.defaultHandler,
+            TokenTypes.SIENTIFIC   :Tokenizer.defaultHandler,
+            TokenTypes.LINENUMBER  :Tokenizer.defaultHandler,
+            TokenTypes.STRING      :Tokenizer.stringHandler,
+            TokenTypes.BOOLEAN     :Tokenizer.defaultHandler,
+            
+            TokenTypes.ADD         :Tokenizer.defaultHandler,
+            TokenTypes.MINUS       :Tokenizer.defaultHandler,
+            TokenTypes.MUL         :Tokenizer.defaultHandler,
+            TokenTypes.DIV         :Tokenizer.defaultHandler,
+            TokenTypes.EXPONENTIAL :Tokenizer.defaultHandler,
+            
+            TokenTypes.EQ          :Tokenizer.defaultHandler,
+            TokenTypes.NEQ         :Tokenizer.defaultHandler,
+            TokenTypes.LE          :Tokenizer.defaultHandler,
+            TokenTypes.GE          :Tokenizer.defaultHandler,
+            TokenTypes.LESS        :Tokenizer.defaultHandler,
+            TokenTypes.MORE        :Tokenizer.defaultHandler,
+            
+            TokenTypes.AND         :Tokenizer.defaultHandler,
+            TokenTypes.OR          :Tokenizer.defaultHandler,
+            TokenTypes.NOT         :Tokenizer.defaultHandler,
+   
+            TokenTypes.CURLYOPEN   :Tokenizer.defaultHandler,
+            TokenTypes.CURLYCLOSE  :Tokenizer.defaultHandler,
+            TokenTypes.ROUNDOPEN   :Tokenizer.defaultHandler,
+            TokenTypes.ROUNDCLOSE  :Tokenizer.defaultHandler,
+            
+            TokenTypes.SEMICOLON   :Tokenizer.defaultHandler,
+            TokenTypes.COLON       :Tokenizer.defaultHandler,
+            
+            TokenTypes.COMMA       :Tokenizer.defaultHandler,
+            TokenTypes.COMMENT     :Tokenizer.defaultHandler,
+            TokenTypes.IGNORE      :Tokenizer.ignoreHandler,
+            TokenTypes.LINESTART   :Tokenizer.defaultHandler,
+            TokenTypes.LINEEND     :Tokenizer.defaultHandler,
+            TokenTypes.IDENTIFIER  :Tokenizer.defaultHandler,
+            TokenTypes.WHITESPACE  :Tokenizer.ignoreHandler,
+            
+            TokenTypes.EOF         :Tokenizer.defaultHandler,
+
+            TokenTypes.CLR         :Tokenizer.defaultHandler,
+            TokenTypes.NEW         :Tokenizer.defaultHandler,
+            TokenTypes.RESTORE     :Tokenizer.defaultHandler,
+            TokenTypes.RETURN      :Tokenizer.defaultHandler,
+            TokenTypes.ST          :Tokenizer.defaultHandler,
+            TokenTypes.STATUS      :Tokenizer.defaultHandler,
+            TokenTypes.STOP        :Tokenizer.defaultHandler,
+            TokenTypes.TI          :Tokenizer.defaultHandler,
+            TokenTypes.TI_DOLLAR   :Tokenizer.defaultHandler,
+            TokenTypes.TIME        :Tokenizer.defaultHandler,
+            TokenTypes.TIME_DOLLAR :Tokenizer.defaultHandler,
+            TokenTypes.PISIGN      :Tokenizer.defaultHandler,
+            TokenTypes.END         :Tokenizer.defaultHandler,
+            TokenTypes.CONT        :Tokenizer.defaultHandler,
+
+            TokenTypes.SYS         :Tokenizer.defaultHandler,
+            TokenTypes.RSPCOLOR    :Tokenizer.defaultHandler,
+            TokenTypes.RSSPRITE    :Tokenizer.defaultHandler,
+            TokenTypes.RIGHT_DOLLAR:Tokenizer.defaultHandler,
+            TokenTypes.HEX_DOLLAR  :Tokenizer.defaultHandler,
+            TokenTypes.RSPPOS      :Tokenizer.defaultHandler,
+            TokenTypes.LEFT_DOLLAR :Tokenizer.defaultHandler,
+            TokenTypes.INSTR       :Tokenizer.defaultHandler,
+            TokenTypes.CHR_DOLLAR  :Tokenizer.defaultHandler,
+            TokenTypes.MID_DOLLAR  :Tokenizer.defaultHandler,
+            TokenTypes.STR_DOLLAR  :Tokenizer.defaultHandler,
+            TokenTypes.ERR_DOLLAR  :Tokenizer.defaultHandler,
+            TokenTypes.RDOT        :Tokenizer.defaultHandler,
+            TokenTypes.PEEK        :Tokenizer.defaultHandler,
+            TokenTypes.POKE        :Tokenizer.defaultHandler,
+            TokenTypes.VERIFY      :Tokenizer.defaultHandler,
+            TokenTypes.SAVE        :Tokenizer.defaultHandler,
+            TokenTypes.LOAD        :Tokenizer.defaultHandler,
+            TokenTypes.WAIT        :Tokenizer.defaultHandler,
+
+            TokenTypes.DEC         :Tokenizer.defaultHandler,
+            TokenTypes.PEN         :Tokenizer.defaultHandler,
+            TokenTypes.POT         :Tokenizer.defaultHandler,
+            TokenTypes.USR         :Tokenizer.defaultHandler,
+            TokenTypes.ABS         :Tokenizer.defaultHandler,
+            TokenTypes.ASC         :Tokenizer.defaultHandler,
+            TokenTypes.ATN         :Tokenizer.defaultHandler,
+            TokenTypes.INT         :Tokenizer.defaultHandler,
+            TokenTypes.COS         :Tokenizer.defaultHandler,
+            TokenTypes.EXP         :Tokenizer.defaultHandler,
+            TokenTypes.FRE         :Tokenizer.defaultHandler,
+            TokenTypes.LEN         :Tokenizer.defaultHandler,
+            TokenTypes.LOG         :Tokenizer.defaultHandler,
+            TokenTypes.POS         :Tokenizer.defaultHandler,
+            TokenTypes.RND         :Tokenizer.defaultHandler,
+            TokenTypes.SGN         :Tokenizer.defaultHandler,
+            TokenTypes.SIN         :Tokenizer.defaultHandler,
+            TokenTypes.SPC         :Tokenizer.defaultHandler,
+            TokenTypes.SQR         :Tokenizer.defaultHandler,
+            TokenTypes.SYS         :Tokenizer.defaultHandler,
+            TokenTypes.TAB         :Tokenizer.defaultHandler,
+            TokenTypes.TAN         :Tokenizer.defaultHandler,
+            TokenTypes.VAL         :Tokenizer.defaultHandler,
+            TokenTypes.TO          :Tokenizer.defaultHandler,
+            TokenTypes.GOTO        :Tokenizer.defaultHandler,
+            TokenTypes.GOSUB       :Tokenizer.defaultHandler,
+            TokenTypes.RUN         :Tokenizer.defaultHandler,
+            TokenTypes.CLOSE       :Tokenizer.defaultHandler,
+            TokenTypes.OPEN        :Tokenizer.defaultHandler,
+            TokenTypes.NEXT        :Tokenizer.defaultHandler,
+            TokenTypes.LIST        :Tokenizer.defaultHandler,
+            TokenTypes.LET         :Tokenizer.ignoreHandler,
+            TokenTypes.FN          :Tokenizer.defaultHandler,
+            TokenTypes.READ        :Tokenizer.defaultHandler,
+            TokenTypes.DATA        :Tokenizer.defaultHandler,
+            TokenTypes.GET         :Tokenizer.defaultHandler,
+            TokenTypes.GET_SHARP   :Tokenizer.defaultHandler,
+            TokenTypes.INPUT_SHARP :Tokenizer.defaultHandler,
+            TokenTypes.PRINT_SHARP :Tokenizer.defaultHandler,
+            TokenTypes.CMD         :Tokenizer.defaultHandler,
+            TokenTypes.SEMICOLON   :Tokenizer.defaultHandler,
+            TokenTypes.DEF         :Tokenizer.defaultHandler,
+            TokenTypes.ON          :Tokenizer.defaultHandler,
+            TokenTypes.INPUT       :Tokenizer.defaultHandler,
+            TokenTypes.DIM         :Tokenizer.defaultHandler,
+            TokenTypes.PRINT       :Tokenizer.defaultHandler,
+            TokenTypes.IF          :Tokenizer.defaultHandler,
+            TokenTypes.THEN        :Tokenizer.defaultHandler,
+            TokenTypes.FOR         :Tokenizer.defaultHandler,
+            TokenTypes.TO          :Tokenizer.defaultHandler,
+            TokenTypes.STEP        :Tokenizer.defaultHandler,
+            
+        }
+    
+
+            
+    ##
+    #
+    #
+    @staticmethod
+    def createUniqueToken(lexer,type=0, pos=0):
+        return ChainToken("",lexer.line+1,lexer.pos+1,type)
+    
+
+    ##
+    #
+    #
+    @staticmethod
+    def createToken(lexer,match,expression):
+        return ChainToken(match[0],lexer.line+1,lexer.pos+1,expression.type)
+
+
+    ##
+    #
+    #
+    @staticmethod
+    def tokenizeLine(lexer, line):
+     
+        if lexer.config.markLinestart:
+            token = Tokenizer.createUniqueToken(lexer,TokenTypes.LINESTART,0)
+            lexer.appendToken(token)
+
+        lexer.pos = 0
+
+        while lexer.pos < len(line):
+
+            lexer.log( "{}".format(line), "debug")
+
+            while True or lexer.pos < len(line):
+                
+                #self.verbose("start scanning ...")
+                restart = True
+                while restart:
+                    restart = False
+                    for expression in lexer.config.tokens:
+                        if Tokenizer.testExpression(lexer,line,expression) and lexer.pos < len(line):
+                            restart=True
+                            break
+
+                # Here we have reached a code that we can't parse.
+                # So we skip the rest of the line.
+                if lexer.pos < len(line):
+                    raise ValueError( "Syntax error @ {}:{}".format(lexer.line, lexer.pos) )
+
+                break
+
+        # End of line reached
+        lexer.mode = 0
+        
+        if lexer.config.markLineend:
+            token = Tokenizer.createUniqueToken(lexer,TokenTypes.LINEEND, lexer.pos)
+            lexer.appendToken(token)
+
+        return 0
+
+
+    ##
+    #
+    #
+    @staticmethod
+    def testExpression(lexer,line,expression):
   
         # TODO: We compile each expression each time. Some kind of cache would be nice.
         pattern = re.compile(expression.expression)
   
-        #self.log("testing :{}".format(expression),"verbose")
-        #self.log(""+line,"verbose")
-        #self.log((" "*self.pos)+"*","verbose")
-  
-        # TODO: search could be faster because it just searches for the first one.
-        match = pattern.match(line,self.pos)
+        match = pattern.match(line,lexer.pos)
         if match:
       
       
-            posOld = self.pos
-            handler = self.getHandler(expression)
-            token = handler(match,expression)
+            posOld = lexer.pos
+            handler = lexer.getHandler(expression)
+            token = handler(lexer,match,expression)
             if token is not None:
-                self.appendToken(token)
-                self.log( ((" "*posOld)+"{}-{}").format(match[0],TokenTypes.getString(token.type)), "verbose" )
+                
+                if token.type in [ TokenTypes.ASSIGNMENT, TokenTypes.EQ]:
+                    # We assume the first = is an assgnment, all following are EQ
+                    if lexer.mode == 0 and lexer.config.hasTokenType(TokenTypes.ASSIGNMENT):
+                        token.type = TokenTypes.ASSIGNMENT
+                        lexer.mode = 1
+                    else:
+                        token.type = TokenTypes.EQ
+                
+                # Between "if" and "then" we are in mode 1
+                # Between "FOR" and "TO" we are in mode 1
+                if token.type in [TokenTypes.IF,TokenTypes.FOR]:
+                    lexer.mode = 1
+
+                # End of command reached.
+                if token.type in [TokenTypes.COLON, TokenTypes.THEN, TokenTypes.TO]:
+                    lexer.mode = 0
+
+                lexer.appendToken(token)
+                lexer.log(((" "*posOld)+"'{}' - ({})").format(match[0],TokenTypes.getString(token.type)),"debug")
+
             return True
         return False
 
     ##
     #
     #
-    def getHandler(self,expression):
-
-        if expression.type in self._handlerList:
-            return self._handlerList[expression.type]
-
-        raise ValueError("No handler defined for {}".format( expression.type))
-
-
-    ##
-    #
-    #
-    def __ignoreHandler(self,match,expression):
-        self.pos = match.end()
+    @staticmethod
+    def ignoreHandler(lexer,match,expression):
+        lexer.pos = match.end()
         return
 
     ##
     #
     #
-    def __stringHandler(self,match,expression):
-        result = self.createToken(match,expression)
-        self.pos = match.end()
+    @staticmethod
+    def stringHandler(lexer,match,expression):
+        result = Tokenizer.createToken(lexer,match,expression)
+        lexer.pos = match.end()
         return result
 
     ##
     #
     #
-    def __defaultHandler(self,match,expression):
-        result = self.createToken(match,expression)
-        self.pos = match.end()
+    @staticmethod
+    def defaultHandler(lexer,match,expression):
+        result = Tokenizer.createToken(lexer,match,expression)
+        lexer.pos = match.end()
         return result
 
-    ##
-    #
-    #
-    def getTokenList(self):
-        result = []
-        token = self.firstToken
-        while token:
-            result.append(token.generateListToken())
-            token = token.next
-        return result
-    

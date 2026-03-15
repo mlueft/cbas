@@ -20,13 +20,6 @@ class StatementParser():
     #
     #
     @staticmethod
-    def registerHandlers():
-        pass
-        
-    ##
-    #
-    #
-    @staticmethod
     def parseStatement(parser):
         parser.log("start:parseStatement ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
         tokenType = parser.currentTokenType

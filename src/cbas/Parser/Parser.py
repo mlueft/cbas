@@ -10,6 +10,7 @@ Lookups = cbas.Parser.Lookups.Lookups
 class Parser():
 
 	def __init__(self):
+		self.debug = False
 		self.tokens = None
 		self.pos	= 0
 		self.errors = []
@@ -23,13 +24,14 @@ class Parser():
 		if message.lower()[0:4] == "end:":
 			self.indentation -= 4
 			
-		#print( (" "*self.indentation)+message )
+		if self.debug:
+			print( (" "*self.indentation)+message )
 		
 		if message.lower()[0:6] == "start:":
 			self.indentation += 4
 
 	def parse(self, tokens):
-		self.log("start:parsing()")
+		self.log("start:parsing()", "debug")
 
 		if self.config is None:
 			raise ValueError("Parser context not set!")
@@ -39,12 +41,12 @@ class Parser():
 		self.__first = None
 		statements = []
 		while self.hasTokens:
-			self.log("=========================================")
-			self.log("while hasToken ...")
-			self.log("=========================================")
+			self.log("=========================================", "debug")
+			self.log("while hasToken ...", "debug")
+			self.log("=========================================", "debug")
 			statements.append( StatementParser.parseStatement(self) )
 		
-		self.log("end:parsing()")
+		self.log("end:parsing()", "debug")
 		return BlockStatement(statements)
 
 	def createLookupTables(self):

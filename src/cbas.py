@@ -1,4 +1,3 @@
-import re
 
 import cbas.Compiler.Compiler
 
@@ -6,10 +5,9 @@ Compiler = cbas.Compiler.Compiler.Compiler
 
 def main():
     configFile  = "/home/work/cbas/config/config.json"
-    inputFile   = "/home/work/cbas/examples/main2.bas"
     #inputFile   = "/home/work/cbas/examples/arithmetic.bas"
 
-    compiler = Compiler()
+    
  
     
     log = []
@@ -32,7 +30,7 @@ def main():
             ["-5 -(1+1)-1",-8],
             ["-5 -(((1)+(1)))-(1)",-8],
 
-            ["0.5*2",1]
+            ["0.5*2",1],
 
             ["true",True],
             ["false",False],
@@ -63,15 +61,20 @@ def main():
         ]
 
         for t in tests:
+            compiler = Compiler(1)
             term  = t[0]
             shall = t[1]
 
-            result = compiler.compileExpression(term,1).statements[0].value
+            statements = compiler.compileExpression(term).statements
+            result = statements[0].value
             if shall != result:
                 log.append( "{}={} != {}".format(term,result,shall) )
 
-    if True:
-        compiler.compileFile( inputFile, 1 )
+    else:
+        compiler = Compiler(2)
+        inputFile   = "/home/work/cbas/examples/basic_V2.bas"
+        #inputFile   = "/home/work/cbas/examples/test.bas"
+        compiler.compileFile( inputFile )
 
     print("==================")
     if len(log)==0:

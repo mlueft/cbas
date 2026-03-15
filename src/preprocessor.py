@@ -19,4 +19,4 @@ def main():
     inputFile   = "/home/work/cbas/examples/pp_arithmetics.bas"
     pp.process(inputFile)
     
-main()
+

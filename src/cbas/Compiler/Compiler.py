@@ -15,15 +15,71 @@ class Compiler():
     ##
     #
     #
-    def __init__(self):
-        self.debug = False
+    def __init__(self, configIndex=0):
+        self.debug = True
+        
+        self.config = self._createConfig(configIndex)
+        self.lexer = self._createLexer(configIndex)
+        self.tokenChainOptimizer = self._createTokenChainOptimizer(configIndex)
+        self.parser = self._createParser(configIndex)
+
+    def _createConfig(self, configIndex):
+        return Config(configIndex)
     
-    def log(msg,level=0):
-        print(msg)
-    ##
-    #
-    #
-    def debugLexerChainList(self,token):
+    def _createLexer(self, configIndex):
+        result = Lexer()
+        result.debug = self.debug
+        return result
+    
+    def _createTokenChainOptimizer(self, configIndex):
+        result = TokenChainOptimizer()
+        result.debug = self.debug
+        return result
+    
+    def _createParser(self, configIndex):
+        result = Parser()
+        result.debug = self.debug
+        return result
+    
+
+    def log(self,msg,level="log"):
+        if self.debug:
+            print(msg)
+
+    def __runLexer(self, inputFile):
+        self.log("", "debug")
+        self.log("lexer ...", "debug")
+        self.log("============================================", "debug")
+        self.lexer.config = self.config.getLexerConfig()
+        self.lexer.tokenizeFile(inputFile)
+
+    def __runChainOptimizer(self):
+        self.log("", "debug")
+        self.log("chainoptimizing ...", "debug")
+        self.log("============================================", "debug")
+        self.tokenChainOptimizer.main(self.lexer.firstToken)
+
+    def __runParser(self):
+        self.log("", "debug")
+        self.log("parser ...", "debug")
+        self.log("============================================", "debug")
+        self.parser.config = self.config.getParserConfig()
+        tokenList = self.lexer.getTokenList()
+        return self.parser.parse(tokenList)
+
+    def __runPostParsingOptimizer(self, ast):
+        #
+        # RunOptimizer 'POST_PARSER_TD'
+        #
+        self.log("", "debug")
+        self.log("POST_PARSER_TD", "debug")
+        self.log("============================================", "debug")
+        conf = self.config.getAstOptimizerConfig()
+        for o in conf.handlers:
+            ast.topDown(o.main)
+
+
+    def __debugLexerChainList(self,token):
         self.log("TOKENS:")
         while token:
             
@@ -46,192 +102,71 @@ class Compiler():
 
             token=token.next
 
-    ##
-    #
-    #
-    def debugTokenlist(self,tokens):
-        self.log("TOKENS List:")
+    def __debugTokenlist(self,tokens):
+        if not self.debug:
+            return
+        self.log("TOKENS List:", "debug")
         for t in tokens:
-            self.log("{}".format(t))
+            self.log("{}".format(t), "debug")
+
+    def __debugAst(self, ast):
+        if not self.debug:
+            return
+        
+        self.log("", "debug")
+        self.log("debug ...", "debug")
+        self.log("============================================", "debug")
+        ast.debug()
+
+    #def callBack(self,node):
+    #    self.log( "{}{}".format(node.id, node) , "debug")
+    
 
     ##
     #
     #
-    def compileExpression(self, expression, configIndex):
-
-        #
-        # Load config
-        #
-        #conf = ConfigLoader(contextFile)
-        if self.debug:
-            self.log("")
-            self.log("config ...")
-            self.log("============================================")
-        conf = Config()
-
+    def compileExpression(self, expression):
 
         #
         # Run Lexer
         #
-        if self.debug:
-            self.log("")
-            self.log("lexer ...")
-            self.log("============================================")
-        lexer = Lexer()
-        lexer.config = conf.getLexerConfig(configIndex)
-        lexer._verbose = True
-        lexer.tokenizeLine(expression)
+        self.log("", "debug")
+        self.log("lexer ...", "debug")
+        self.log("============================================", "debug")
+        self.lexer.config = self.config.getLexerConfig()
+        self.lexer.tokenizeLine(expression)
 
+        self.__runChainOptimizer()
 
-        #
-        # Run Chain optimizers
-        #
-        if self.debug:
-            self.log("")
-            self.log("chainoptimizing ...")
-            self.log("============================================")
-        optimizer = TokenChainOptimizer()
-        optimizer.main(lexer.firstToken)
+        self.__debugTokenlist( self.lexer.getTokenList() )
 
+        ast = self.__runParser()
 
-        if self.debug:
-            self.debugTokenlist( lexer.getTokenList() )
+        self.__debugAst(ast)
 
+        self.__runPostParsingOptimizer(ast)
 
-        #
-        # Run Parser
-        #
-        if self.debug:
-            self.log("")
-            self.log("parser ...")
-            self.log("============================================")
-        parser = Parser()
-        config = conf.getParserConfig(configIndex)
-        parser.config = config
-        tokenList = lexer.getTokenList()
-        ast = parser.parse(tokenList)
-
-
-        #
-        # DEBUG
-        #
-        if self.debug:
-            self.log("")
-            self.log("debug ...")
-            self.log("============================================")
-            ast.debug()
-
-        if False:
-            #
-            # OUTLINE
-            #
-            self.log("")
-            self.log("OUTLINE")
-            self.log("============================================")
-            ast.outline(self.callBack)
-
-            #
-            # BOTTOMUP
-            #
-            self.log("")
-            self.log("BOTTOMUP")
-            self.log("============================================")
-            ast.bottomUp(self.callBack)
-
-            #
-            # TOPDOWN
-            #
-            self.log("")
-            self.log("TOPDOWN")
-            self.log("============================================")
-            ast.topDown(self.callBack)
-
-
-        #
-        # RunOptimizer 'POST_PARSER_TD'
-        #
-        if self.debug:
-            self.log("")
-            self.log("POST_PARSER_TD")
-            self.log("============================================")
-        conf = conf.getAstOptimizerConfig(configIndex)
-        for o in conf.handlers:
-            ast.topDown(o.main)
-
-        #
-        # DEBUG
-        #
-        if self.debug:
-            self.log("")
-            self.log("debug ...")
-            self.log("============================================")
-            ast.debug()
-
-
-        #
-        # RunOptimizer 'POST_PARSER_BU'
-        #
-        if self.debug:
-            self.log("")
-            self.log("POST_PARSER_BU")
-            self.log("============================================")
-        #conf = conf.getAstOptimizerConfig(configIndex)
-        for o in conf.handlers:
-            ast.bottomUp(o.main)
-
-        #
-        # DEBUG
-        #
-        if self.debug:        
-            self.log("")
-            self.log("debug ...")
-            self.log("============================================")
-            ast.debug()
+        self.__debugAst(ast)
 
         return ast
     
-    def callBack(self,node):
-        
-        self.log( "{}{}".format(node.id, node) )
-        return
-    
     ##
     #
     #
-    def compileFile(self, inputFile, configIndex ):
+    def compileFile(self, inputFile ):
+
+        self.__runLexer(inputFile)
+
+        self.__runChainOptimizer()
+
+        self.__debugTokenlist( self.lexer.getTokenList() )
+
+        ast = self.__runParser()
+   
+        self.__debugAst(ast)
         
-        #
-        # Load config
-        #
-        #conf = ConfigLoader(contextFile)
-        conf = Config()
+        self.__runPostParsingOptimizer(ast)
+        
+        self.__debugAst(ast)
 
-        #
-        # Run Lexer
-        #
-        lexer = Lexer()
-        lexer.config = conf.getLexerConfig(configIndex)
-        lexer._verbose = True
-        lex = lexer.tokenize(inputFile)
-
-        #debugLexerChainList(lexer.firstToken)
-
-        #
-        # Run Chain optimizers
-        #
-        optimizer = TokenChainOptimizer()
-        lex = optimizer.optimize(lexer.firstToken)
-
-        self.debugTokenlist( lexer.getTokenList() )
-
-        #
-        # Run Parser
-        #
-        parser = Parser()
-        parser.config = conf.getParserConfig(configIndex)
-        tokenList = lexer.getTokenList()
-        ast = parser.parse(tokenList)
-
-        ast.debug()
-
-
+        return ast
