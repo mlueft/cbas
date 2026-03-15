@@ -67,16 +67,21 @@ class Compiler():
         tokenList = self.lexer.getTokenList()
         return self.parser.parse(tokenList)
 
-    def __runPostParsingOptimizer(self, ast):
+    def __runAstOptimizer(self, ast, mode="bu"):
         #
         # RunOptimizer 'POST_PARSER_TD'
         #
         self.log("", "debug")
-        self.log("POST_PARSER_TD", "debug")
+        self.log("ASTOPTIMIZER {}".format(mode), "debug")
         self.log("============================================", "debug")
         conf = self.config.getAstOptimizerConfig()
         for o in conf.handlers:
-            ast.topDown(o.main)
+            if mode == "td":
+                ast.topDown(o.main)
+            elif mode == "bu":
+                ast.bottomUp(o.main)
+            else:
+                ast.outline(o.main)
 
 
     def __debugLexerChainList(self,token):
@@ -142,9 +147,13 @@ class Compiler():
 
         ast = self.__runParser()
 
+        # Corrects unary
+        self.__runAstOptimizer(ast,"td")
+
         self.__debugAst(ast)
 
-        self.__runPostParsingOptimizer(ast)
+        # Simplifies arithmetics ans boolean logic
+        self.__runAstOptimizer(ast,"bu")
 
         self.__debugAst(ast)
 
@@ -163,9 +172,13 @@ class Compiler():
 
         ast = self.__runParser()
    
+        # Corrects unary
+        self.__runAstOptimizer(ast,"td")
+
         self.__debugAst(ast)
-        
-        self.__runPostParsingOptimizer(ast)
+
+        # Simplifies arithmetics ans boolean logic
+        self.__runAstOptimizer(ast,"bu")
         
         self.__debugAst(ast)
 
