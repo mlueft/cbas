@@ -1,3 +1,8 @@
+#include test.pp
+
+
+
+
 
 #define MACRO(%0,%1) CONTENT-%0-%1-   
 
@@ -40,6 +45,7 @@ OK - a ist nicht definiert.
 
 #config keepindentation false
     #include test.pp
+
 
 #define AA 4
 #if AA = 4

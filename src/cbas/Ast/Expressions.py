@@ -1,3 +1,4 @@
+import cbas
 import cbas.Lexer.TokenTypes
 import cbas.Parser.Lookups
 import cbas.Parser.BindingPower
@@ -18,80 +19,6 @@ TreeNode = cbas.DataStructures.TreeNode.TreeNode
 
 class ExpressionParser():
     
-    STATEMENTS = [
-        TokenTypes.CLR,
-        TokenTypes.NEW,
-        TokenTypes.RESTORE,
-        TokenTypes.RETURN,
-        TokenTypes.ST,
-        TokenTypes.STATUS,
-        TokenTypes.STOP,
-        TokenTypes.TI,
-        TokenTypes.TI_DOLLAR,
-        TokenTypes.TIME,
-        TokenTypes.TIME_DOLLAR,
-        TokenTypes.PISIGN,
-        TokenTypes.END,
-        TokenTypes.CONT,
-        TokenTypes.GOTO,
-        TokenTypes.GOSUB,
-        TokenTypes.RUN,
-        TokenTypes.CLOSE,
-        TokenTypes.POKE,
-        TokenTypes.VERIFY,
-        TokenTypes.SAVE,
-        TokenTypes.LOAD,
-        TokenTypes.WAIT,
-        TokenTypes.OPEN,
-        TokenTypes.NEXT,
-        TokenTypes.LIST,
-        TokenTypes.READ,
-        TokenTypes.DATA,
-        TokenTypes.GET,
-        TokenTypes.GET_SHARP,
-        TokenTypes.INPUT_SHARP,
-        TokenTypes.PRINT_SHARP,
-        TokenTypes.CMD,
-        TokenTypes.DEF,
-        TokenTypes.ON,
-        TokenTypes.INPUT,
-        TokenTypes.DIM,
-        TokenTypes.PRINT,
-        TokenTypes.SEMICOLON,
-        TokenTypes.IF,
-        TokenTypes.FOR
-    ]
-    
-    FUNCTIONS = [
-        TokenTypes.SYS,
-        TokenTypes.ABS,
-        TokenTypes.LEFT_DOLLAR,
-        TokenTypes.MID_DOLLAR,
-        TokenTypes.RIGHT_DOLLAR,
-        TokenTypes.STR_DOLLAR,
-        TokenTypes.CHR_DOLLAR,
-        TokenTypes.ABS,
-        TokenTypes.ASC,
-        TokenTypes.ATN,
-        TokenTypes.PEEK,
-        TokenTypes.COS,
-        TokenTypes.FRE,
-        TokenTypes.INT,
-        TokenTypes.LEN,
-        TokenTypes.LOG,
-        TokenTypes.POS,
-        TokenTypes.RND,
-        TokenTypes.SGN,
-        TokenTypes.SIN,
-        TokenTypes.SPC,
-        TokenTypes.SQR,
-        TokenTypes.TAB,
-        TokenTypes.TAN,
-        TokenTypes.USR,
-        TokenTypes.VAL,
-        TokenTypes.EXP
-    ]
-
     ## 4
     #  "BLA"
     #  4.1
@@ -99,122 +26,135 @@ class ExpressionParser():
     #
     @staticmethod
     def parsePrimaryExpression(parser):
-        parser.log("start:parsePrimaryExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
+        cbas.log("start:parsePrimaryExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
 
         type = parser.currentTokenType
         
         if type == TokenTypes.INTEGER:
             token = parser.advance()
             result = PrimaryExpression( "int", int(token.code), token )
-            parser.log("end:parsePrimaryExpression", "debug" )
+            cbas.log("end:parsePrimaryExpression", "debug" )
             return result
         
         elif type == TokenTypes.FLOAT:
             token = parser.advance()
             result = PrimaryExpression( "float", float(token.code), token)
-            parser.log("end:parsePrimaryExpression", "debug" )
+            cbas.log("end:parsePrimaryExpression", "debug" )
             return result
 
         elif type == TokenTypes.SIENTIFIC:
             token = parser.advance()
+            parts = token.code.lower().split("e")
+            base = float(parts[0])
+            if len(parts[1]) == 0:
+                exp = 0
+            else:
+                exp = int(parts[1])
+
             result = PrimaryExpression( "scientific", token.code, token)
-            parser.log("end:parsePrimaryExpression", "debug" )
+            cbas.log("end:parsePrimaryExpression", "debug" )
             return result
 
         elif type == TokenTypes.STRING:
             token = parser.advance()
             result = PrimaryExpression( "string", token.code, token)
-            parser.log("end:parsePrimaryExpression", "debug" )
+            cbas.log("end:parsePrimaryExpression", "debug" )
             return result
 
         elif type == TokenTypes.BOOLEAN:
             token = parser.advance()
             result = PrimaryExpression( "boolean", token.code.lower() == 'true', token)
-            parser.log("end:parsePrimaryExpression", "debug" )
+            cbas.log("end:parsePrimaryExpression", "debug" )
             return result
             
         elif type == TokenTypes.IDENTIFIER:
             token = parser.advance()
             result = PrimaryExpression( "symbol", token.code, token)
-            parser.log("end:parsePrimaryExpression", "debug" )
+            cbas.log("end:parsePrimaryExpression", "debug" )
             return result
 
         elif type == TokenTypes.LINENUMBER:
             token = parser.advance()
             result = PrimaryExpression( "linenumber", token.code, token)
-            parser.log("end:parsePrimaryExpression", "debug" )
+            cbas.log("end:parsePrimaryExpression", "debug" )
             return result
         
         elif type == TokenTypes.COMMENT:
             token = parser.advance()
             result = PrimaryExpression( "comment", token.code, token)
-            parser.log("end:parsePrimaryExpression", "debug" )
+            cbas.log("end:parsePrimaryExpression", "debug" )
             return result
 
         elif type == TokenTypes.LINEEND:
             token = parser.advance()
             result = PrimaryExpression( "lineend", token.code, token)
-            parser.log("end:parsePrimaryExpression", "debug" )
+            cbas.log("end:parsePrimaryExpression", "debug" )
             return result
         
         elif type == TokenTypes.COLON:
             token = parser.advance()
             result = PrimaryExpression( "colon", token.code, token)
-            parser.log("end:parsePrimaryExpression", "debug" )
+            cbas.log("end:parsePrimaryExpression", "debug" )
             return result
         
         elif type == TokenTypes.SEMICOLON:
             token = parser.advance()
             result = PrimaryExpression( "semicolon", token.code, token)
-            parser.log("end:parsePrimaryExpression", "debug" )
+            cbas.log("end:parsePrimaryExpression", "debug" )
             return result
         
         elif type == TokenTypes.COMMA:
             token = parser.advance()
             result = PrimaryExpression( "comma", token.code, token)
-            parser.log("end:parsePrimaryExpression", "debug" )
+            cbas.log("end:parsePrimaryExpression", "debug" )
             return result
 
+        elif type == TokenTypes.LABEL:
+            token = parser.advance()
+            result = PrimaryExpression( "label", token.code, token)
+            cbas.log("end:parsePrimaryExpression", "debug" )
+            return result
 
         elif type in [ TokenTypes.MUL, TokenTypes.DIV, TokenTypes.ADD, TokenTypes.MINUS ]:
             token = parser.advance()
             result = PrimaryExpression( "arithmetic", token.code, token)
-            parser.log("end:parsePrimaryExpression", "debug" )
+            cbas.log("end:parsePrimaryExpression", "debug" )
             return result
                 
         elif type in [ TokenTypes.EQ, TokenTypes.NEQ, TokenTypes.LESS, TokenTypes.MORE, TokenTypes.LE, TokenTypes.GE, TokenTypes.AND, TokenTypes.OR, TokenTypes.NOT]:
             token = parser.advance()
             result = PrimaryExpression( "logical", token.code, token)
-            parser.log("end:parsePrimaryExpression", "debug" )
+            cbas.log("end:parsePrimaryExpression", "debug" )
             return result
         
-        elif type in ExpressionParser.FUNCTIONS:
+        elif type in parser.config.functions:
             token = parser.advance()
             result = PrimaryExpression( "function", token.code, token)
-            parser.log("end:parsePrimaryExpression", "debug" )
+            cbas.log("end:parsePrimaryExpression", "debug" )
             return result
         
-        elif type in ExpressionParser.STATEMENTS:
+        elif type in parser.config.statements:
             token = parser.advance()
             result = PrimaryExpression( "statement", token.code, token)
-            parser.log("end:parsePrimaryExpression", "debug" )
-            return result        
+            cbas.log("end:parsePrimaryExpression", "debug" )
+            return result
+        
         else:
-            raise ValueError( "Can't generate primary expression for {}!".format(TokenTypes.getString(type)) )
+            raise ValueError( "Can't generate primary expression for {}!".format(TokenTypes.toString(type)) )
     
     ##
     #
     #    
     @staticmethod
     def parseExpression(parser, bp):
-        parser.log("start:parseExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
+        cbas.log("start:parseExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
 
 
         # parse nud
         tokenType   = parser.currentTokenType
 
         if tokenType not in Lookups.nud:
-            raise ValueError("Nud handler expected for token type ({})".format(TokenTypes.getString(tokenType)) )
+            raise ValueError("Nud handler expected for token type ({})".format(TokenTypes.toString(tokenType)) )
         
         nudFunction = Lookups.nud[tokenType]
 
@@ -222,24 +162,24 @@ class ExpressionParser():
          
         # This is for linenumber/labels/eof
         if parser.currentTokenType not in Lookups.bp:
-            parser.log("end:parseExpression ... ", "debug" )
+            cbas.log("end:parseExpression ... ", "debug" )
             return left
 
         while  Lookups.bp[parser.currentTokenType] > bp:
             tokenType = parser.currentTokenType
             
             if tokenType not in Lookups.led:
-                raise ValueError("Led handler expected for token type ({})".format(TokenTypes.getString(tokenType)) )
+                raise ValueError("Led handler expected for token type ({})".format(TokenTypes.toString(tokenType)) )
             
             ledFunction = Lookups.led[tokenType]
             left = ledFunction(parser,left,Lookups.bp[parser.currentTokenType])
 
             # This is for linenumber/labels/eof
             if parser.currentTokenType not in Lookups.bp:
-                parser.log("end:parseExpression ... ", "debug" )
+                cbas.log("end:parseExpression ... ", "debug" )
                 return left
             
-        parser.log("end:parseExpression ... ", "debug" )
+        cbas.log("end:parseExpression ... ", "debug" )
         return left
 
     ##
@@ -254,9 +194,9 @@ class ExpressionParser():
     #
     @staticmethod
     def parseBinaryExpression(parser, left, bp ):
-        parser.log("start:parseBinaryExpression ... '{}' ({}) @ {}".format(
+        cbas.log("start:parseBinaryExpression ... '{}' ({}) @ {}".format(
             parser.currentToken.code,
-            TokenTypes.getString( parser.currentToken.type ),
+            TokenTypes.toString( parser.currentToken.type ),
             parser.pos
         ), "debug" )
 
@@ -269,7 +209,7 @@ class ExpressionParser():
             right
         )
 
-        parser.log("end:parseBinaryExpression", "debug" )
+        cbas.log("end:parseBinaryExpression", "debug" )
         return result
    
     ##
@@ -277,7 +217,7 @@ class ExpressionParser():
     #
     @staticmethod
     def parsePrefixExpression(parser):
-        parser.log("start:parsePrefixExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
+        cbas.log("start:parsePrefixExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
 
         operatorToken = ExpressionParser.parsePrimaryExpression(parser) #parser.advance()
         right = ExpressionParser.parseExpression(parser,BindingPower.DEFAULT)
@@ -287,7 +227,7 @@ class ExpressionParser():
             right
         )
         
-        parser.log("end:parsePrefixExpression", "debug" )
+        cbas.log("end:parsePrefixExpression", "debug" )
         return result
 
     ##
@@ -295,7 +235,7 @@ class ExpressionParser():
     #
     @staticmethod
     def parseGroupingExpression(parser):
-        parser.log("start:parseGroupingExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
+        cbas.log("start:parseGroupingExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
 
         start = parser.advance()
         expression = ExpressionParser.parseExpression(parser,BindingPower.DEFAULT)
@@ -305,7 +245,7 @@ class ExpressionParser():
         )
         parser.expect( TokenTypes.ROUNDCLOSE )
 
-        parser.log("end:parseGroupingExpression", "debug" )
+        cbas.log("end:parseGroupingExpression", "debug" )
         return result
 
     ##
@@ -313,12 +253,12 @@ class ExpressionParser():
     #
     @staticmethod
     def parseAssignmentExpression(parser, left, bp):
-        parser.log("start:parseAssignmentExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
+        cbas.log("start:parseAssignmentExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
         # We skip the "="
         parser.advance()
         right = ExpressionParser.parseExpression(parser,bp)
         result = AssignmentExpression(left, right)
-        parser.log("end:parseAssignmentExpression", "debug" )
+        cbas.log("end:parseAssignmentExpression", "debug" )
         return result
 
     ##
@@ -326,7 +266,7 @@ class ExpressionParser():
     #
     @staticmethod
     def parseProcedureCallExpression(parser, left,bp):
-        parser.log("start:parseProcedureCallExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
+        cbas.log("start:parseProcedureCallExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
 
         functionName = left #ExpressionParser.parseExpression(parser,BindingPower.DEFAULT) #parser.advance()
         parameters = []
@@ -337,7 +277,7 @@ class ExpressionParser():
         # we collect all parameters
         ct = parser.currentTokenType
         while ct != TokenTypes.ROUNDCLOSE:
-            expr = ExpressionParser.parseExpression(parser,bp)# BindingPower.DEFAULT)
+            expr = ExpressionParser.parseExpression(parser,BindingPower.ASSIGNMENT)# BindingPower.DEFAULT)
             parameters.append( expr )
             
             # We skip the parameter seperator
@@ -350,7 +290,7 @@ class ExpressionParser():
         parser.advance()
 
         result = CallExpression(functionName,parameters)
-        parser.log("end:parseProcedureCallExpression", "debug" )
+        cbas.log("end:parseProcedureCallExpression", "debug" )
         return result
 
     ##
@@ -358,20 +298,30 @@ class ExpressionParser():
     #
     @staticmethod
     def parseStatementExpression(parser):
-        parser.log("start:parseStatementExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
+        cbas.log("start:parseStatementExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
         statement = ExpressionParser.parsePrimaryExpression(parser)
         #right = ExpressionParser.parseExpression(parser,BindingPower.DEFAULT)
         parameters = []
 
         while parser.currentTokenType not in [TokenTypes.LINEEND,TokenTypes.COLON,TokenTypes.EOF, TokenTypes.LINENUMBER]:
-            right = ExpressionParser.parseExpression(parser,BindingPower.DEFAULT)
-            parameters.append(right)
+            if parser.currentTokenType == TokenTypes.COMMA:
+                t=PrimaryExpression( "None", None, None )
+                parameters.append(t)
+                #parser.advance()
+            else:
+                right = ExpressionParser.parseExpression(parser,BindingPower.DEFAULT)
+                parameters.append(right)
             
             if parser.currentTokenType == TokenTypes.COMMA:
                 parser.advance()
         
+        if parser.lastTokenType == TokenTypes.COMMA:
+            t=PrimaryExpression( "None", None, None )
+            parameters.append(t)
+            parser.advance()
+
         result = StatementExpression(statement,parameters)
-        parser.log("end:parseStatementExpression", "debug" )
+        cbas.log("end:parseStatementExpression", "debug" )
         return result
 
     ##
@@ -379,7 +329,7 @@ class ExpressionParser():
     #
     @staticmethod
     def parseListStatement(parser):
-        parser.log("start:parseListStatement ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
+        cbas.log("start:parseListStatement ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
         statement = ExpressionParser.parsePrimaryExpression(parser)
         #right = ExpressionParser.parseExpression(parser,BindingPower.DEFAULT)
         parameters = []
@@ -395,7 +345,7 @@ class ExpressionParser():
                 right = ExpressionParser.parsePrimaryExpression(parser)
                 parameters.append(right)
         result = StatementExpression(statement,parameters)
-        parser.log("end:parseListStatement", "debug" )
+        cbas.log("end:parseListStatement", "debug" )
         return result
 
     ##
@@ -403,7 +353,7 @@ class ExpressionParser():
     #
     @staticmethod
     def parseFNExpression(parser):
-        parser.log("start:parseFNExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
+        cbas.log("start:parseFNExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
         parameters = []
         # we skip "FN"
         parser.advance()
@@ -413,7 +363,7 @@ class ExpressionParser():
         parser.expect(TokenTypes.ROUNDCLOSE)
         
         result = FunctionCallExpression(functionName,parameters)
-        parser.log("end:parseFNExpression", "debug" )
+        cbas.log("end:parseFNExpression", "debug" )
         return result
 
     ##
@@ -421,7 +371,7 @@ class ExpressionParser():
     #
     @staticmethod
     def parseCMDExpression(parser):
-        parser.log("start:parseCMDExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
+        cbas.log("start:parseCMDExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
         statement = ExpressionParser.parsePrimaryExpression(parser)
         #right = ExpressionParser.parseExpression(parser,BindingPower.DEFAULT)
         parameters = []
@@ -432,7 +382,7 @@ class ExpressionParser():
             if parser.currentTokenType in[TokenTypes.COMMA,TokenTypes.SEMICOLON]:
                 parser.advance()
         result =  StatementExpression(statement,parameters)
-        parser.log("end:parseCMDExpression", "debug" )
+        cbas.log("end:parseCMDExpression", "debug" )
         return result
 
     ##
@@ -440,12 +390,13 @@ class ExpressionParser():
     #
     @staticmethod
     def parseDEFExpression(parser):
-        parser.log("start:parseDEFExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
+        cbas.log("start:parseDEFExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
         # we skip "def"
         parser.advance()
         # we skip "fn"
         parser.advance()
         functionName = ExpressionParser.parsePrimaryExpression(parser)
+
         # we skip "("
         parser.advance()
         parameters = []
@@ -460,9 +411,14 @@ class ExpressionParser():
         # we skip "="
         parser.advance()
         body = ExpressionParser.parseExpression(parser, BindingPower.DEFAULT)
-        
+
+        # Update Symboltable
+        symbol = cbas.symbolTable.getSymbol(functionName.value)
+        symbol.type = "function"
+        symbol.parameters = len(parameters)
+
         result = FunctionDefinitionExpression(functionName,parameters,body)
-        parser.log("end:parseDEFExpression", "debug" )
+        cbas.log("end:parseDEFExpression", "debug" )
         return result
 
     ##
@@ -470,7 +426,7 @@ class ExpressionParser():
     #
     @staticmethod
     def parseONExpression(parser):
-        parser.log("start:parseONExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
+        cbas.log("start:parseONExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
         # We skip "on"
         parser.advance()
 
@@ -490,7 +446,7 @@ class ExpressionParser():
             if parser.currentTokenType in[TokenTypes.COMMA]:
                 parser.advance()
         result = OnExpression(index,jumpMethode,lineNumbers)
-        parser.log("end:parseGroupingExpression", "debug" )
+        cbas.log("end:parseGroupingExpression", "debug" )
         return result
     
     ##
@@ -498,23 +454,21 @@ class ExpressionParser():
     #
     @staticmethod
     def parseINPUTExpression(parser):
-        parser.log("start:parseINPUTExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
+        cbas.log("start:parseINPUTExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
         statement = ExpressionParser.parsePrimaryExpression(parser)
 
-        message = ExpressionParser.parseExpression(parser,BindingPower.DEFAULT)
-        
-        # We skip ";"
-        parser.advance()
-
-        parameters = [message]
+        parameters = []
         while parser.currentTokenType not in [TokenTypes.LINEEND,TokenTypes.COLON,TokenTypes.EOF, TokenTypes.LINENUMBER]:
             right = ExpressionParser.parseExpression(parser,BindingPower.DEFAULT)
             parameters.append(right)
             
-            if parser.currentTokenType in[TokenTypes.COMMA]:
-                parser.advance()
-        parser.log("end:parseINPUTExpression", "debug" )
-        result = StatementExpression(statement,parameters)
+            # For input we collect the seperator too.
+            if parser.currentTokenType in [TokenTypes.COMMA, TokenTypes.SEMICOLON]:
+                seperator = ExpressionParser.parsePrimaryExpression(parser)
+                parameters.append(seperator)
+
+        cbas.log("end:parseINPUTExpression", "debug" )
+        result = InputExpression(statement,parameters)
         return result
 
     ##
@@ -522,7 +476,7 @@ class ExpressionParser():
     #
     @staticmethod
     def parseDIMExpression(parser):
-        parser.log("start:parseDIMExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
+        cbas.log("start:parseDIMExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
         # We skip "dim"
         parser.advance()
 
@@ -550,7 +504,7 @@ class ExpressionParser():
 
             assignment = ExpressionParser.parseExpression(parser, BindingPower.DEFAULT)
         result = DimExpression(variable,parameters, assignment)
-        parser.log("end:parseDIMExpression", "debug" )
+        cbas.log("end:parseDIMExpression", "debug" )
         return result
 
     ##
@@ -558,19 +512,22 @@ class ExpressionParser():
     #
     @staticmethod
     def parsePRINTExpression(parser):
-        parser.log("start:parsePRINTExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
+        cbas.log("start:parsePRINTExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
         statement = ExpressionParser.parsePrimaryExpression(parser)
         #right = ExpressionParser.parseExpression(parser,BindingPower.DEFAULT)
+        
         parameters = []
         while parser.currentTokenType not in [TokenTypes.LINEEND,TokenTypes.COLON,TokenTypes.EOF, TokenTypes.LINENUMBER]:
             right = ExpressionParser.parseExpression(parser,BindingPower.DEFAULT)
             parameters.append(right)
             
+            # For print we collect the seperator too.
             if parser.currentTokenType in [TokenTypes.COMMA, TokenTypes.SEMICOLON]:
                 seperator = ExpressionParser.parsePrimaryExpression(parser)
                 parameters.append(seperator)
-        result = StatementExpression(statement,parameters)
-        parser.log("end:parsePRINTExpression", "debug" )
+
+        result = PrintExpression(statement,parameters)
+        cbas.log("end:parsePRINTExpression", "debug" )
         return result
     
     ##
@@ -578,7 +535,7 @@ class ExpressionParser():
     #
     @staticmethod
     def parseIFExpression(parser):
-        parser.log("start:parseIFExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
+        cbas.log("start:parseIFExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
         # We skip "if"
         parser.advance()
 
@@ -598,7 +555,7 @@ class ExpressionParser():
             if parser.currentTokenType in [TokenTypes.COLON]:
                 parser.advance()
         result = IfExpression(condition, code)
-        parser.log("end:parseIFExpression", "debug" )
+        cbas.log("end:parseIFExpression", "debug" )
         return result
     
     ##
@@ -606,7 +563,7 @@ class ExpressionParser():
     #
     @staticmethod
     def parseFORExpression(parser):
-        parser.log("start:parseFORExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
+        cbas.log("start:parseFORExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
         # We skip "for"
         parser.advance()
 
@@ -640,11 +597,20 @@ class ExpressionParser():
 
         # 
         result = ForExpression(runner,start,end,step, loopCode)
-        parser.log("end:parseFORExpression", "debug" )
+        cbas.log("end:parseFORExpression", "debug" )
         return result
 
 
-
+    ##
+    #
+    #
+    @staticmethod
+    def parseLabelExpression(parser):
+        result = ExpressionParser.parsePrimaryExpression(parser)
+        id = cbas.labelTable.addLabel(result.code)
+        result.value = id
+        return result
+        
 
 
 
@@ -659,10 +625,17 @@ class Expression(TreeNode):
     def __init__(self, value = None):
         super().__init__()
         self.value = value
+        self._basicGenerated = False
 
     def _getNodes(self):
         return [self.value]
 
+    def toBasic(self):
+        if self._basicGenerated:
+            return None
+        self._basicGenerated = True
+        return None
+    
 ##
 #
 #
@@ -674,6 +647,10 @@ class PrimaryExpression(Expression):
         self.__token = token
         self._isLeaf = True
 
+    @property
+    def token(self):
+        return self.__token
+    
     @property
     def type(self):
         if self.__token is None:
@@ -702,7 +679,7 @@ class PrimaryExpression(Expression):
         return []
 
     def debug(self,level=0):
-        print( "{:<4}:{}tag:'{}' value:'{}' type:{} @{}:{}".format(self.id, " "*level*self.indentation, self.tag, self.value,  TokenTypes.getString(self.__token),self.line,self.pos) )
+        cbas.log( "{:<4}:{}tag:'{}' value:'{}' type:{} @{}:{}".format(self.id, " "*level*self.indentation, self.tag, self.value,  TokenTypes.toString(self.__token),self.line,self.pos), "debug" )
 
     def __str__(self):
         return "{:<4} {}".format( self.tag, self.value)
@@ -715,6 +692,7 @@ class PrimaryExpression(Expression):
 
     def topDown(self, handler):
         handler(self,TraverseMode.TOP_DOWN)
+
 
 ##
 #   4+3
@@ -786,6 +764,7 @@ class PrefixExpression(Expression):
     def _getNodes(self):
         return [self.operator,self.right]
     
+
 ##
 #
 #
@@ -806,7 +785,7 @@ class GroupingExpression(Expression):
 #
 class AssignmentExpression(Expression):
 
-    def __init__(self,right, left):
+    def __init__(self,left, right):
         super().__init__()
         self.right = right
         self.left = left
@@ -829,6 +808,8 @@ class AssignmentExpression(Expression):
 
     def _getNodes(self):
         return [self.right, self.left]
+
+
 ##
 #
 #
@@ -867,6 +848,7 @@ class CallExpression(Expression):
             result.append(p)
         return result
     
+
 ##
 #
 #
@@ -904,6 +886,7 @@ class StatementExpression(Expression):
             result.append(p)
         return result
     
+
 ##
 #
 #
@@ -987,6 +970,7 @@ class FunctionDefinitionExpression(Expression):
         result.append(self.body)
         return result
     
+
 ##
 #
 #
@@ -1092,10 +1076,10 @@ class IfExpression(Expression):
     def __init__(self, condition, code):
         super().__init__()
         self.condition = condition
-        self.code = code
+        self.trueCode = code
         
         self.condition.onReplace.add(self._hndReplaceCondition)
-        for s in self.code:
+        for s in self.trueCode:
             s.onReplace.add(self._hndReplaceCode)
 
 
@@ -1107,17 +1091,17 @@ class IfExpression(Expression):
 
     def _hndReplaceCode(self,ev):
         #print("BlockStatement::_hndReplaceLeft")
-        for i,v in enumerate(self.code):
+        for i,v in enumerate(self.trueCode):
             if ev.eventSource == v:
-                self.code[i].onReplace.remove(self._hndReplaceCode)
-                self.code[i] = ev.replacement
-                self.code[i].onReplace.add(self._hndReplaceCode)
+                self.trueCode[i].onReplace.remove(self._hndReplaceCode)
+                self.trueCode[i] = ev.replacement
+                self.trueCode[i].onReplace.add(self._hndReplaceCode)
                 return
             
     def _getNodes(self):
         result = []
         result.append(self.condition)
-        for p in self.code:
+        for p in self.trueCode:
             result.append(p)
         return result
     
@@ -1179,6 +1163,7 @@ class ForExpression(Expression):
                 return
             
     def _getNodes(self):
+
         result = []
         result.append(self.runner)
         result.append(self.start)
@@ -1189,3 +1174,81 @@ class ForExpression(Expression):
             for p in self.loopCode:
                 result.append(p)            
         return result
+    
+
+##
+#
+#
+class PrintExpression(Expression):
+
+    def __init__(self, statement, parameters):
+        super().__init__()
+        self.statement = statement
+        self.parameters = parameters
+
+        self.statement.onReplace.add(self._hndReplaceFunction)
+
+        for s in self.parameters:
+            s.onReplace.add(self._hndReplaceParameter)
+
+    def _hndReplaceFunction(self,ev):
+        #print("GroupingExpression::_hndReplaceFunction")
+        self.statement.onReplace.remove(self._hndReplaceFunction)
+        self.statement = ev.replacement
+        self.statement.onReplace.add(self._hndReplaceFunction)
+
+    def _hndReplaceParameter(self,ev):
+        #print("BlockStatement::_hndReplaceLeft")
+        for i,v in enumerate(self.parameters):
+            if ev.eventSource == v:
+                self.parameters[i].onReplace.remove(self._hndReplaceParameter)
+                self.parameters[i] = ev.replacement
+                self.parameters[i].onReplace.add(self._hndReplaceParameter)
+                return
+            
+    def _getNodes(self):
+        result = []
+        result.append(self.statement) 
+        for p in self.parameters:
+            result.append(p)
+        return result
+    
+##
+#
+#
+class InputExpression(Expression):
+
+    def __init__(self, statement, parameters):
+        super().__init__()
+        self.statement = statement
+        self.parameters = parameters
+
+        self.statement.onReplace.add(self._hndReplaceFunction)
+
+        for s in self.parameters:
+            s.onReplace.add(self._hndReplaceParameter)
+
+    def _hndReplaceFunction(self,ev):
+        #print("GroupingExpression::_hndReplaceFunction")
+        self.statement.onReplace.remove(self._hndReplaceFunction)
+        self.statement = ev.replacement
+        self.statement.onReplace.add(self._hndReplaceFunction)
+
+    def _hndReplaceParameter(self,ev):
+        #print("BlockStatement::_hndReplaceLeft")
+        for i,v in enumerate(self.parameters):
+            if ev.eventSource == v:
+                self.parameters[i].onReplace.remove(self._hndReplaceParameter)
+                self.parameters[i] = ev.replacement
+                self.parameters[i].onReplace.add(self._hndReplaceParameter)
+                return
+            
+    def _getNodes(self):
+        result = []
+        result.append(self.statement) 
+        for p in self.parameters:
+            result.append(p)
+        return result
+    
+
+# cmd semicolon

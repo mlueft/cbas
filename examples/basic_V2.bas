@@ -7,11 +7,9 @@
 10 a = left$(10)
 10 a = chr$(10)
 10 a = mid$(10)
-10 a = err$(10)
 10 a = peek(10)
 10 a = cos(10)
 10 a = fre(10)
-10 a = instr(10)
 10 a = int(10)
 10 a = len(10)
 10 a = log(10)
@@ -45,8 +43,9 @@
 10 GO TO 120
 10 GOTO 121
 10 GOSUB 123
-10 RUN 124
 10 close 3
+10 run
+10 RUN 124
 
 10 POKE 1024,4
 10 VERIFY 1024,4
@@ -133,11 +132,9 @@ a = right$(10)
 a = left$(10)
 a = chr$(10)
 a = mid$(10)
-a = err$(10)
 a = peek(10)
 a = cos(10)
 a = fre(10)
-a = instr(10)
 a = int(10)
 a = len(10)
 a = log(10)

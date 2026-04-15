@@ -20,7 +20,7 @@ class ListToken():
         self.type = type
 
     def __str__(self):
-        return "{}:{} - '{}' '{}'".format( self.line, self.pos, self.code, TokenTypes.getString(self.type) )
+        return "{}:{} - '{}' '{}'".format( self.line, self.pos, self.code, TokenTypes.toString(self.type) )
 
     def __repr__(self):
         if self.isString:

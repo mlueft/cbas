@@ -2,38 +2,41 @@ import io
 import os
 
 import cbas.Compiler.Compiler
-import cbas.Compiler.SymbolTable
+import cbas.Preprocessor.SymbolTable
+import cbas.Config.Config
 
 Compiler = cbas.Compiler.Compiler.Compiler
-SymbolTable = cbas.Compiler.SymbolTable.SymbolTable
+SymbolTable = cbas.Preprocessor.SymbolTable.SymbolTable
+Config = cbas.Config.Config.Config
 
 class Preprocessor():
 
-    INCLUDE  = "#include"
-    CONFIG   = "#config"
-    DEFINE   = "#define"
-    UNDEFINE = "#undefine"
-    IFDEF    = "#ifdef"
-    IFNDEF   = "#ifndef"
-    ELSE     = "#else"
-    ENDIF    = "#endif"
-    IF       = "#if"
+    CMD_INCLUDE  = "#include"
+    CMD_CONFIG   = "#config"
+    CMD_DEFINE   = "#define"
+    CMD_UNDEFINE = "#undefine"
+    CMD_IFDEF    = "#ifdef"
+    CMD_IFNDEF   = "#ifndef"
+    CMD_ELSE     = "#else"
+    CMD_ENDIF    = "#endif"
+    CMD_IF       = "#if"
     
+    CK_KEEP_INDENTATION = "keepindentation"
+
     def __init__(self, outputFolder, libFolders = [] ):
-        self.CONFIGID = 1
         self.keepindentation = False
         self.outputFolder = outputFolder
         self.libFolders   = libFolders
         self.commandHandlers = {
-            Preprocessor.INCLUDE:  self.handleInclude,
-            Preprocessor.CONFIG:   self.handleConfig,
-            Preprocessor.DEFINE:   self.handleDefine,
-            Preprocessor.UNDEFINE: self.handleUndefine,
-            Preprocessor.IFDEF:    self.handleIfdef,
-            Preprocessor.IFNDEF:   self.handleIfNdef,
-            Preprocessor.ELSE:     self.handleElse,
-            Preprocessor.ENDIF:    self.handleEndif,
-            Preprocessor.IF:       self.handleIf
+            Preprocessor.CMD_INCLUDE:  self.handleInclude,
+            Preprocessor.CMD_CONFIG:   self.handleConfig,
+            Preprocessor.CMD_DEFINE:   self.handleDefine,
+            Preprocessor.CMD_UNDEFINE: self.handleUndefine,
+            Preprocessor.CMD_IFDEF:    self.handleIfdef,
+            Preprocessor.CMD_IFNDEF:   self.handleIfNdef,
+            Preprocessor.CMD_ELSE:     self.handleElse,
+            Preprocessor.CMD_ENDIF:    self.handleEndif,
+            Preprocessor.CMD_IF:       self.handleIf
         }
         self.indentation = ""
         self.writeLine = True
@@ -101,6 +104,7 @@ class Preprocessor():
                 handler(outputStream, line)
             else:
                 if self.writeLine:
+                    print(indentation+self.symbolTable.replaceSymbols(line) )
                     outputStream.write(indentation+self.symbolTable.replaceSymbols(line) )
             
             line = inputStream.readline()
@@ -110,9 +114,12 @@ class Preprocessor():
     #
     def handleInclude(self, outputStream, line  ):
     
-        self.indentation = ""
-        if self.keepindentation:
-            self.indentation += self.getIndentation(line)
+        #self.indentation = ""
+        localIndentation = self.getIndentation(line)
+        restoreki=self.keepindentation
+
+        if restoreki:
+            self.indentation += localIndentation
 
         parameters = self.getParameters(line)
         
@@ -125,8 +132,11 @@ class Preprocessor():
                 with io.open(includeFile, "r", encoding="utf-8") as includefile:
                     self._process(outputStream, includefile, self.indentation)
                 
-                outputStream.write("\n")
+                #outputStream.write("\n")
                 self.indentation = self.getIndentation(line)
+
+        if restoreki:
+            self.indentation = self.indentation[:-len(localIndentation)]
 
     ##
     #
@@ -136,7 +146,7 @@ class Preprocessor():
         cmd = parameters[0]
         value = parameters[1]
         
-        if cmd.lower() == "keepindentation":
+        if cmd.lower() == Preprocessor.CK_KEEP_INDENTATION:
             self.keepindentation = value.lower() == "true"
             
         else:
@@ -151,7 +161,7 @@ class Preprocessor():
         line = line.rstrip("\n")
 
         # We remove the '#define' string
-        line = line[len(Preprocessor.DEFINE):].lstrip()
+        line = line[len(Preprocessor.CMD_DEFINE):].lstrip()
 
         # We extract the macro name
         # The macro name ends at space or '('
@@ -184,7 +194,7 @@ class Preprocessor():
             for i,v in enumerate(list(params)):
                 params[i] = v.strip()
 
-        self.symbolTable.addSymbol( macroName, line.lstrip(), params )
+        id = self.symbolTable.addSymbol( macroName, line.lstrip(), params )
         
     ##
     #
@@ -229,15 +239,19 @@ class Preprocessor():
     #
     #
     def handleIf(self, outputStream, line  ):
-        expr = line[len(Preprocessor.IF):].strip()
+        expr = line[len(Preprocessor.CMD_IF):].strip()
 
+        print(expr)
         expr = self.symbolTable.replaceSymbols(expr)
-
-        compiler = Compiler()
-        result = compiler.compileExpression(expr, self.CONFIGID )
+        print(expr)
+        
+        compiler = Compiler(Config.PREPROCESSOR)
+        result = compiler.compileExpression(expr )
 
         if len(result.statements) != 1:
             raise ValueError("If-Condition couldn't be evaluated!: "+line)
+        else:
+            pass
 
         self.writeLine = result.statements[0].value
 

@@ -1,0 +1,15 @@
+goto @main
+
+@test0
+rem test0
+goto @test1
+goto @main
+
+@test1
+rem test1
+goto @main
+
+@main
+goto @test0
+rem main0
+rem main1

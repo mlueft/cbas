@@ -1,39 +1,55 @@
+import cbas
 import cbas.Ast.Expressions
 import cbas.DataStructures.TraverseMode
+import cbas.Lexer.TokenTypes
+from cbas.Exceptions.Exceptions import SemanticErrorException
 
 TraverseMode = cbas.DataStructures.TraverseMode.TraverseMode
 BinaryExpression = cbas.Ast.Expressions.BinaryExpression
 PrimaryExpression = cbas.Ast.Expressions.PrimaryExpression
 GroupingExpression = cbas.Ast.Expressions.GroupingExpression
 PrefixExpression = cbas.Ast.Expressions.PrefixExpression
+TokenTypes = cbas.Lexer.TokenTypes.TokenTypes
 
-class ArithmeticOptimizer():
 
-    @staticmethod
-    def main(node, direction):
+class AstOptimizer():
+    
+    def __init__(self):
+        pass
+
+    def main(self, node, direction):
+        pass
+
+
+class ArithmeticOptimizer(AstOptimizer):
+
+    def __init__(self):
+        super().__init__()
+
+    def main(self, node, direction):
         
         #print( "{}".format(type(node))  )
         replacement = node
-        replacement = ArithmeticOptimizer._resolveGrouping(replacement, direction)
-        replacement = ArithmeticOptimizer._resolvePrefix(replacement, direction)
-        replacement = ArithmeticOptimizer._resolveArithmetic(replacement, direction)
+        replacement = self._resolveGrouping(replacement, direction)
+        replacement = self._resolvePrefix(replacement, direction)
+        replacement = self._resolveArithmetic(replacement, direction)
         node.replace(replacement)
 
     #
     # Prefix resolver
     #
-    def _resolvePrefix(node, direction):
+    def _resolvePrefix(self, node, direction):
 
         if type(node) is not PrefixExpression:
             return node
 
         if direction == TraverseMode.TOP_DOWN:
-            return ArithmeticOptimizer._resolvePrefixTopDown(node)
+            return self._resolvePrefixTopDown(node)
         if direction == TraverseMode.BOTTOM_UP:
-            return ArithmeticOptimizer._resolvePrefixBottomUp(node)
+            return self._resolvePrefixBottomUp(node)
         return node
     
-    def _resolvePrefixBottomUp(node):
+    def _resolvePrefixBottomUp(self, node):
         
         op = node.operator.value
         expr = node.right
@@ -53,7 +69,7 @@ class ArithmeticOptimizer():
     
         return node
     
-    def _resolvePrefixTopDown(node):
+    def _resolvePrefixTopDown(self, node):
 
         if node.operator.value not in  ['-']:
             return node
@@ -80,7 +96,7 @@ class ArithmeticOptimizer():
     #
     # Grouping resolver
     #
-    def _resolveGrouping(node, direction):
+    def _resolveGrouping(self, node, direction):
 
         if direction != TraverseMode.BOTTOM_UP:
             return node
@@ -93,11 +109,7 @@ class ArithmeticOptimizer():
     #
     # Arithmetic resolver
     #
-    def _resolveArithmetic(node, direction):
-        #return node
-    
-        if direction != TraverseMode.BOTTOM_UP:
-            return node
+    def _resolveArithmetic(self, node, direction):
 
         if type(node) is not BinaryExpression:
             return node
@@ -141,21 +153,19 @@ class ArithmeticOptimizer():
         return replacement
 
 
-class LogicOptimizer():
+class LogicOptimizer(AstOptimizer):
 
-    @staticmethod
-    def main(node,direction):
+    def __init__(self):
+        super().__init__()
+
+    def main(self, node,direction):
         #print( "{}".format(type(node))  )
         replacement = node
-        replacement = LogicOptimizer._resolveComparor(replacement, direction)
+        replacement = self._resolveComparor(replacement, direction)
         node.replace(replacement)
     
-    @staticmethod
-    def _resolveComparor(node,direction):
+    def _resolveComparor(self, node,direction):
         
-        if direction != TraverseMode.BOTTOM_UP:
-            return node
-
         if type(node) is not BinaryExpression:
             return node
         
@@ -201,9 +211,78 @@ class LogicOptimizer():
 
         #print( "{}{}{} => {}".format(lv,op,rv,r) )
         return replacement
-    
-class StringOptimizer():
 
-    @staticmethod
-    def main(node):
+
+class StringOptimizer(AstOptimizer):
+
+    def __init__(self):
+        super().__init__()
+
+    def main(self, node, direction):
         pass
+
+
+class SyntaxCheckerV2(AstOptimizer):
+
+    def __init__(self):
+        super().__init__()
+
+    def __expectParameterCounf(self, node, min=0, max=100):
+            token = node.statement.token
+            qty = len(node.parameters)
+            if qty < min :
+                message = "Too little parameters for {} in line @ {}:{}.".format(TokenTypes.toString(token.type).upper(),token.line,token.pos)
+                raise SemanticErrorException(message)
+            elif qty > max :
+                message = "Too much parameters for {} in line @ {}:{}.".format(TokenTypes.toString(token.type).upper(),token.line,token.pos)
+                raise SemanticErrorException(message)
+                        
+    def __checkStsParameterQantity(self,node):
+        
+        if type(node) == cbas.Ast.Expressions.StatementExpression:
+            token = node.statement.token
+            qty = len(node.parameters)
+            if token.type in[ TokenTypes.CLR, TokenTypes.NEW, TokenTypes.RESTORE, TokenTypes.RETURN, TokenTypes.ST, TokenTypes.STATUS, TokenTypes.STOP, TokenTypes.TI, TokenTypes.TI_DOLLAR, TokenTypes.TIME, TokenTypes.TIME_DOLLAR, TokenTypes.PISIGN, TokenTypes.END, TokenTypes.CONT ]:
+                self.__expectParameterCounf( node,0,0 )
+           
+            elif token.type in[ TokenTypes.RUN ]:
+                self.__expectParameterCounf( node,0,1 )
+            
+            elif token.type in[ TokenTypes.GOTO, TokenTypes.GOSUB, TokenTypes.CLOSE ]:
+                self.__expectParameterCounf( node,1,1 )
+            
+            elif token.type in[ TokenTypes.POKE ]:
+                self.__expectParameterCounf( node,2,2 )
+                
+            elif token.type == TokenTypes.WAIT:
+                self.__expectParameterCounf( node,2,3 )
+
+            elif token.type == TokenTypes.VERIFY:
+                self.__expectParameterCounf( node,0,2 )
+
+            elif token.type in [TokenTypes.SAVE, TokenTypes.LOAD]:
+                self.__expectParameterCounf( node,0,3 )
+
+            elif token.type == TokenTypes.OPEN:
+                self.__expectParameterCounf( node,1,4 )
+
+            elif token.type == TokenTypes.LIST:
+                self.__expectParameterCounf( node,0,1 )
+
+            elif token.type == TokenTypes.GET:
+                self.__expectParameterCounf( node,1,100 )
+
+            elif token.type == TokenTypes.GET_SHARP:
+                self.__expectParameterCounf( node,2,100 )
+            
+            elif token.type == TokenTypes.INPUT:
+                self.__expectParameterCounf( node,1,100 )
+
+        elif type(node) == cbas.Ast.Expressions.FunctionCallExpression:
+            if len(node.parameters) != 1:
+                message = "Too much parameters for {} in line @ {}:{}.".format(TokenTypes.toString(token.type).upper(),token.line,token.pos)
+                raise SemanticErrorException(message)
+            
+
+    def main(self, node, direction):
+        self.__checkStsParameterQantity(node)

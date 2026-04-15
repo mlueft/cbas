@@ -1,6 +1,7 @@
 from operator import attrgetter
 
 import cbas.Config.LexerConfig
+import cbas.Config.TokenChainOptimizerConfig
 import cbas.Config.ParserConfig
 import cbas.Config.AstOptimizerConfig
 
@@ -13,25 +14,31 @@ import cbas.Parser.ConfigToken
 import cbas.Ast.Expressions
 import cbas.Ast.Statements
 
-import cbas.AstOptimizer.AstOptimizer
+#import cbas.AstOptimizer.AstOptimizer
 import cbas.AstOptimizer.ConfigToken
+import cbas.DataStructures.TraverseMode
 
 import cbas.Config.LexerMatrix
 import cbas.Config.ParserMatrix
+import cbas.Config.AstOptimizerMatrix
+import cbas.Compiler.CompilerPasses
 
-
-TokenTypes          = cbas.Lexer.TokenTypes.TokenTypes
-BindingPower        = cbas.Parser.BindingPower.BindingPower
-LexerConfigToken    = cbas.Lexer.ConfigToken.ConfigToken
-LexerConfig         = cbas.Config.LexerConfig.LexerConfig
-ParserConfigToken   = cbas.Parser.ConfigToken.ConfigToken
-ParserConfig        = cbas.Config.ParserConfig.ParserConfig
-ExpressionParser    = cbas.Ast.Expressions.ExpressionParser
-StatementParser     = cbas.Ast.Statements.StatementParser
-ArithmeticOptimizer = cbas.AstOptimizer.AstOptimizer.ArithmeticOptimizer
-LogicOptimizer      = cbas.AstOptimizer.AstOptimizer.LogicOptimizer
-AstOptimizerConfig  = cbas.Config.AstOptimizerConfig.AstOptimizerConfig
-AstOptimizerToken   = cbas.AstOptimizer.ConfigToken.ConfigToken
+TokenTypes                = cbas.Lexer.TokenTypes.TokenTypes
+BindingPower              = cbas.Parser.BindingPower.BindingPower
+LexerConfigToken          = cbas.Lexer.ConfigToken.ConfigToken
+LexerConfig               = cbas.Config.LexerConfig.LexerConfig
+TokenChainOptimizerConfig = cbas.Config.TokenChainOptimizerConfig.TokenChainOptimizerConfig
+ParserConfigToken         = cbas.Parser.ConfigToken.ConfigToken
+ParserConfig              = cbas.Config.ParserConfig.ParserConfig
+ExpressionParser          = cbas.Ast.Expressions.ExpressionParser
+StatementParser           = cbas.Ast.Statements.StatementParser
+#ArithmeticOptimizer       = cbas.AstOptimizer.AstOptimizer.ArithmeticOptimizer
+#LogicOptimizer            = cbas.AstOptimizer.AstOptimizer.LogicOptimizer
+AstOptimizerConfig        = cbas.Config.AstOptimizerConfig.AstOptimizerConfig
+AstOptimizerToken         = cbas.AstOptimizer.ConfigToken.ConfigToken
+#SyntaxCheckerV2           = cbas.AstOptimizer.AstOptimizer.SyntaxCheckerV2
+TraverseMode              = cbas.DataStructures.TraverseMode.TraverseMode
+CompilerPasses            = cbas.Compiler.CompilerPasses.CompilerPasses
 
 class Config():
 
@@ -45,71 +52,13 @@ class Config():
     V7           = 7
     V10          = 8
 
-    # =============================================
-    # LEXER
-    # =============================================
-    lexerTokens = cbas.Config.LexerMatrix.LexerMatrix.Tokens
-    lexerConfig = cbas.Config.LexerMatrix.LexerMatrix.Matrix
-    lexerParameters = cbas.Config.LexerMatrix.LexerMatrix.Parameters
-
-    # Order is important
-
-    # =============================================
-    # PARSER
-    # =============================================
-    parserTokens = cbas.Config.ParserMatrix.ParserMatrix.Tokens
-    parserConfig = cbas.Config.ParserMatrix.ParserMatrix.Matrix
-    parserParameters = cbas.Config.ParserMatrix.ParserMatrix.Parameters
-
-    # Order is important
-
-
-    # =============================================
-    # LEXER OPTIMIZER
-    # =============================================
-
-    # =============================================
-    # AST OPTIMIZER
-    # =============================================
-
-    astOptimizerConfigTokens = {
-        "arithmetic": ArithmeticOptimizer,
-        "logical"   : LogicOptimizer
-    }
-
-    astOptimizerConfig = {
-        # ------------------------------------------------------------------
-        #                         AR    PP    V2    v3.5  v3.6  v4    v4+   v7    v10
-        # ------------------------------------------------------------------
-        "arithmetic":             [ 1,    1,    1,    1,    1,    1,    1,    1,    1    ],
-        "logical":                [ 0,    1,    1,    1,    1,    1,    1,    1,    1    ],
-
-    }
-
     def __init__(self, configIndex):
         self.configIndex = configIndex
 
         pass
 
-    def getLexerToken(self, token):
-        return LexerConfigToken(
-                            token["type"],
-                            token["expression"],
-                            token["order"],
-                            token["handler"]
-                        )
-    
-    def getParserToken(self, token):
-        return ParserConfigToken(
-                        token["bindingpower"],
-                        token["type"],
-                        token["category"],
-                        token["handler"],
-                    )
-
-
     def getLexerConfig(self):
-        parameters = Config.lexerParameters[self.configIndex]
+        parameters = cbas.Config.LexerMatrix.LexerMatrix.Parameters[self.configIndex]
         result = LexerConfig()
         result.name = parameters["name"]
         result.description = parameters["description"]
@@ -117,31 +66,70 @@ class Config():
         result.markLineend = parameters["markLineend"]
         result.markEOF = parameters["markEOF"]
         
-        for key in Config.lexerConfig.keys():
-            if Config.lexerConfig[key][self.configIndex] == 1:
-                result.tokens.append(self.getLexerToken(self.lexerTokens[key]))
+        for key in cbas.Config.LexerMatrix.LexerMatrix.Matrix.keys():
+            if cbas.Config.LexerMatrix.LexerMatrix.Matrix[key][self.configIndex] == 1:
+                token = cbas.Config.LexerMatrix.LexerMatrix.Tokens[key]
+                result.tokens.append(
+                    LexerConfigToken(
+                        token["type"],
+                        token["expression"],
+                        token["order"],
+                        token["handler"]
+                    )
+                )
 
         result.tokens = sorted(result.tokens, key=attrgetter('order'))
         return result
     
+    def getTokenChainOptimizerConfig(self):
+        result = TokenChainOptimizerConfig()
+
+        return result
+
     def getParserConfig(self):
-        parameters = Config.parserParameters[self.configIndex]
+        parameters = cbas.Config.ParserMatrix.ParserMatrix.Parameters[self.configIndex]
         result = ParserConfig()
         result.name = parameters["name"]
-        keys = Config.parserConfig.keys()
+        result.functions = cbas.Config.ParserMatrix.ParserMatrix.Functions
+        result.statements = cbas.Config.ParserMatrix.ParserMatrix.Statements
+        keys = cbas.Config.ParserMatrix.ParserMatrix.Matrix.keys()
         for key in keys:
-            if Config.parserConfig[key][self.configIndex] == 1:
-                result.tokens.append(self.getParserToken(self.parserTokens[key]))
+            if cbas.Config.ParserMatrix.ParserMatrix.Matrix[key][self.configIndex] == 1:
+                token = cbas.Config.ParserMatrix.ParserMatrix.Tokens[key]
+                result.tokens.append(
+                    ParserConfigToken(
+                        token["bindingpower"],
+                        token["type"],
+                        token["category"],
+                        token["handler"],
+                    )
+                )
 
         result.tokens = sorted(result.tokens, key=attrgetter('bindingpower'))
         
         return result
 
-    def getAstOptimizerConfig(self):
+    def getAstOptimizerConfig(self,compilerPass):
         result = AstOptimizerConfig()
-        keys = Config.astOptimizerConfig.keys()
+
+        parameters = cbas.Config.AstOptimizerMatrix.AstOptimizerMatrix.Parameters[self.configIndex]
+        result.name = parameters["name"]
+        result.description = parameters["description"]
+    
+        if compilerPass == CompilerPasses.CHECK_SEMANTIC:
+            matrix = cbas.Config.AstOptimizerMatrix.AstOptimizerMatrix.Matrixsemanticcheck
+            tokens = cbas.Config.AstOptimizerMatrix.AstOptimizerMatrix.TokensSemanticcheck
+
+        elif compilerPass == CompilerPasses.POST_PARSER:
+            matrix = cbas.Config.AstOptimizerMatrix.AstOptimizerMatrix.MatrixPostParser
+            tokens = cbas.Config.AstOptimizerMatrix.AstOptimizerMatrix.TokensPostParser
+
+        keys = tokens.keys()
         for key in keys:
-            if Config.astOptimizerConfig[key][self.configIndex] == 1:
+            if matrix[key][self.configIndex] == 1:
                 #print(key)
-                result.handlers.append(self.astOptimizerConfigTokens[key])
+                result.handlers.append(
+                    [tokens[key]["instance"],tokens[key]["direction"]]
+                )
+        
         return result

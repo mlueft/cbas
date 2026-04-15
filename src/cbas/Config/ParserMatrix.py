@@ -10,6 +10,80 @@ StatementParser     = cbas.Ast.Statements.StatementParser
 
 class ParserMatrix():
 
+    Statements = [
+        TokenTypes.CLR,
+        TokenTypes.NEW,
+        TokenTypes.RESTORE,
+        TokenTypes.RETURN,
+        TokenTypes.ST,
+        TokenTypes.STATUS,
+        TokenTypes.STOP,
+        TokenTypes.TI,
+        TokenTypes.TI_DOLLAR,
+        TokenTypes.TIME,
+        TokenTypes.TIME_DOLLAR,
+        TokenTypes.PISIGN,
+        TokenTypes.END,
+        TokenTypes.CONT,
+        TokenTypes.GOTO,
+        TokenTypes.GOSUB,
+        TokenTypes.RUN,
+        TokenTypes.CLOSE,
+        TokenTypes.POKE,
+        TokenTypes.VERIFY,
+        TokenTypes.SAVE,
+        TokenTypes.LOAD,
+        TokenTypes.WAIT,
+        TokenTypes.OPEN,
+        TokenTypes.NEXT,
+        TokenTypes.LIST,
+        TokenTypes.READ,
+        TokenTypes.DATA,
+        TokenTypes.GET,
+        TokenTypes.GET_SHARP,
+        TokenTypes.INPUT_SHARP,
+        TokenTypes.PRINT_SHARP,
+        TokenTypes.CMD,
+        TokenTypes.DEF,
+        TokenTypes.ON,
+        TokenTypes.INPUT,
+        TokenTypes.DIM,
+        TokenTypes.PRINT,
+        TokenTypes.SEMICOLON,
+        TokenTypes.IF,
+        TokenTypes.FOR
+    ]
+
+    Functions = [
+        TokenTypes.SYS,
+        TokenTypes.ABS,
+        TokenTypes.LEFT_DOLLAR,
+        TokenTypes.MID_DOLLAR,
+        TokenTypes.RIGHT_DOLLAR,
+        TokenTypes.STR_DOLLAR,
+        TokenTypes.CHR_DOLLAR,
+        TokenTypes.ABS,
+        TokenTypes.ASC,
+        TokenTypes.ATN,
+        TokenTypes.PEEK,
+        TokenTypes.COS,
+        TokenTypes.FRE,
+        TokenTypes.INT,
+        TokenTypes.LEN,
+        TokenTypes.LOG,
+        TokenTypes.POS,
+        TokenTypes.RND,
+        TokenTypes.SGN,
+        TokenTypes.SIN,
+        TokenTypes.SPC,
+        TokenTypes.SQR,
+        TokenTypes.TAB,
+        TokenTypes.TAN,
+        TokenTypes.USR,
+        TokenTypes.VAL,
+        TokenTypes.EXP
+    ]
+
     Parameters = [
         
         {
@@ -40,6 +114,7 @@ class ParserMatrix():
             "name":""
         }
     ]
+    
     Tokens = {
         
         # 0 - default
@@ -79,6 +154,7 @@ class ParserMatrix():
         "literalBoolean":     { "category": "nud", "bindingpower": 0,                           "type": TokenTypes.BOOLEAN,      "handler": ExpressionParser.parsePrimaryExpression   },
         "identifier":         { "category": "nud", "bindingpower": 0,                           "type": TokenTypes.IDENTIFIER,   "handler": ExpressionParser.parsePrimaryExpression   },
         "lineNumber":         { "category": "nud", "bindingpower": 0,                           "type": TokenTypes.LINENUMBER,   "handler": ExpressionParser.parsePrimaryExpression   },
+        "label":              { "category": "nud", "bindingpower": 0,                           "type": TokenTypes.LABEL,        "handler": ExpressionParser.parseLabelExpression     },
         "comment":            { "category": "nud", "bindingpower": 0,                           "type": TokenTypes.COMMENT,      "handler": ExpressionParser.parsePrimaryExpression   },
 #        "function":           { "category": "nud", "bindingpower": 0,                           "type": TokenTypes.FUNCTION,    "handler": ExpressionParser.parsePrimaryExpression   },
         
@@ -203,6 +279,7 @@ class ParserMatrix():
         "literalBoolean":       [ 0,    1,    0,    0,    0,    0,    0,    0,    0    ],
         "identifier":           [ 0,    1,    1,    1,    1,    1,    1,    1,    1    ],
         "lineNumber":           [ 0,    0,    1,    1,    1,    1,    1,    1,    1    ],
+        "label":                [ 0,    0,    1,    1,    1,    1,    1,    1,    1    ],
         "comment":              [ 0,    0,    1,    1,    1,    1,    1,    1,    1    ],
         "unary":                [ 1,    1,    1,    1,    1,    1,    1,    1,    1    ],
         "grouping":             [ 1,    1,    1,    1,    1,    1,    1,    1,    1    ],
@@ -281,7 +358,7 @@ class ParserMatrix():
         "if":                   [ 0,    0,    1,    1,    0,    0,    0,    0,    0    ],
         "for":                  [ 0,    0,    1,    1,    0,    0,    0,    0,    0    ],
         
-        "lineend":              [ 0,    0,    1,    1,    1,    1,    1,    1,    1    ],
+        "lineend":              [ 1,    1,    1,    1,    1,    1,    1,    1,    1    ],
 
         "call":                 [ 0,    0,    1,    0,    0,    0,    0,    0,    0    ]
 

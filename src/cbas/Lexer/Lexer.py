@@ -1,3 +1,4 @@
+import cbas
 import re
 
 import cbas.Lexer.Tokens
@@ -8,24 +9,16 @@ ChainToken = cbas.Lexer.Tokens.ChainToken
 
 class Lexer():
 
+    MODE_ASSIGNMENT = 0
+    MODE_EQ         = 1
+
     def __init__(self):
-        self.debug           = False
         self.currentToken    = None
         self.firstToken      = None
-        self.line            = 0
-        self.pos             = 0
+        self.line            = 1
+        self.pos             = 1
         self.config          = None
-        self.debug = False
-        # 0 => = is assignment
-        # 1 => = is EQ
-        self.mode = 0
-
-    ##
-    #
-    #
-    def log(self,message,type="log"):
-        if self.debug:
-            print(message)
+        self.mode            = Lexer.MODE_ASSIGNMENT
 
     ##
     #
@@ -77,7 +70,7 @@ class Lexer():
 
                 Tokenizer.tokenizeLine(self,line)
 
-                self.log("", "debug")
+                cbas.log("", "debug")
                 line = source.readline()
                 self.line += 1
             
@@ -125,7 +118,7 @@ class Lexer():
             if expression.type ==h.type:
                 return h.handler
 
-        raise ValueError("No handler defined for '{}'".format( TokenTypes.getString(expression.type)))
+        raise ValueError("No handler defined for '{}'".format( TokenTypes.toString(expression.type)))
 
 
 
@@ -134,146 +127,7 @@ class Lexer():
 
 class Tokenizer():
 
-
-    ##
-    #
-    #
-    @staticmethod
-    def __createHandlerList():
-        return {
-            TokenTypes.INTEGER     :Tokenizer.defaultHandler,
-            TokenTypes.FLOAT       :Tokenizer.defaultHandler,
-            TokenTypes.SIENTIFIC   :Tokenizer.defaultHandler,
-            TokenTypes.LINENUMBER  :Tokenizer.defaultHandler,
-            TokenTypes.STRING      :Tokenizer.stringHandler,
-            TokenTypes.BOOLEAN     :Tokenizer.defaultHandler,
-            
-            TokenTypes.ADD         :Tokenizer.defaultHandler,
-            TokenTypes.MINUS       :Tokenizer.defaultHandler,
-            TokenTypes.MUL         :Tokenizer.defaultHandler,
-            TokenTypes.DIV         :Tokenizer.defaultHandler,
-            TokenTypes.EXPONENTIAL :Tokenizer.defaultHandler,
-            
-            TokenTypes.EQ          :Tokenizer.defaultHandler,
-            TokenTypes.NEQ         :Tokenizer.defaultHandler,
-            TokenTypes.LE          :Tokenizer.defaultHandler,
-            TokenTypes.GE          :Tokenizer.defaultHandler,
-            TokenTypes.LESS        :Tokenizer.defaultHandler,
-            TokenTypes.MORE        :Tokenizer.defaultHandler,
-            
-            TokenTypes.AND         :Tokenizer.defaultHandler,
-            TokenTypes.OR          :Tokenizer.defaultHandler,
-            TokenTypes.NOT         :Tokenizer.defaultHandler,
-   
-            TokenTypes.CURLYOPEN   :Tokenizer.defaultHandler,
-            TokenTypes.CURLYCLOSE  :Tokenizer.defaultHandler,
-            TokenTypes.ROUNDOPEN   :Tokenizer.defaultHandler,
-            TokenTypes.ROUNDCLOSE  :Tokenizer.defaultHandler,
-            
-            TokenTypes.SEMICOLON   :Tokenizer.defaultHandler,
-            TokenTypes.COLON       :Tokenizer.defaultHandler,
-            
-            TokenTypes.COMMA       :Tokenizer.defaultHandler,
-            TokenTypes.COMMENT     :Tokenizer.defaultHandler,
-            TokenTypes.IGNORE      :Tokenizer.ignoreHandler,
-            TokenTypes.LINESTART   :Tokenizer.defaultHandler,
-            TokenTypes.LINEEND     :Tokenizer.defaultHandler,
-            TokenTypes.IDENTIFIER  :Tokenizer.defaultHandler,
-            TokenTypes.WHITESPACE  :Tokenizer.ignoreHandler,
-            
-            TokenTypes.EOF         :Tokenizer.defaultHandler,
-
-            TokenTypes.CLR         :Tokenizer.defaultHandler,
-            TokenTypes.NEW         :Tokenizer.defaultHandler,
-            TokenTypes.RESTORE     :Tokenizer.defaultHandler,
-            TokenTypes.RETURN      :Tokenizer.defaultHandler,
-            TokenTypes.ST          :Tokenizer.defaultHandler,
-            TokenTypes.STATUS      :Tokenizer.defaultHandler,
-            TokenTypes.STOP        :Tokenizer.defaultHandler,
-            TokenTypes.TI          :Tokenizer.defaultHandler,
-            TokenTypes.TI_DOLLAR   :Tokenizer.defaultHandler,
-            TokenTypes.TIME        :Tokenizer.defaultHandler,
-            TokenTypes.TIME_DOLLAR :Tokenizer.defaultHandler,
-            TokenTypes.PISIGN      :Tokenizer.defaultHandler,
-            TokenTypes.END         :Tokenizer.defaultHandler,
-            TokenTypes.CONT        :Tokenizer.defaultHandler,
-
-            TokenTypes.SYS         :Tokenizer.defaultHandler,
-            TokenTypes.RSPCOLOR    :Tokenizer.defaultHandler,
-            TokenTypes.RSSPRITE    :Tokenizer.defaultHandler,
-            TokenTypes.RIGHT_DOLLAR:Tokenizer.defaultHandler,
-            TokenTypes.HEX_DOLLAR  :Tokenizer.defaultHandler,
-            TokenTypes.RSPPOS      :Tokenizer.defaultHandler,
-            TokenTypes.LEFT_DOLLAR :Tokenizer.defaultHandler,
-            TokenTypes.INSTR       :Tokenizer.defaultHandler,
-            TokenTypes.CHR_DOLLAR  :Tokenizer.defaultHandler,
-            TokenTypes.MID_DOLLAR  :Tokenizer.defaultHandler,
-            TokenTypes.STR_DOLLAR  :Tokenizer.defaultHandler,
-            TokenTypes.ERR_DOLLAR  :Tokenizer.defaultHandler,
-            TokenTypes.RDOT        :Tokenizer.defaultHandler,
-            TokenTypes.PEEK        :Tokenizer.defaultHandler,
-            TokenTypes.POKE        :Tokenizer.defaultHandler,
-            TokenTypes.VERIFY      :Tokenizer.defaultHandler,
-            TokenTypes.SAVE        :Tokenizer.defaultHandler,
-            TokenTypes.LOAD        :Tokenizer.defaultHandler,
-            TokenTypes.WAIT        :Tokenizer.defaultHandler,
-
-            TokenTypes.DEC         :Tokenizer.defaultHandler,
-            TokenTypes.PEN         :Tokenizer.defaultHandler,
-            TokenTypes.POT         :Tokenizer.defaultHandler,
-            TokenTypes.USR         :Tokenizer.defaultHandler,
-            TokenTypes.ABS         :Tokenizer.defaultHandler,
-            TokenTypes.ASC         :Tokenizer.defaultHandler,
-            TokenTypes.ATN         :Tokenizer.defaultHandler,
-            TokenTypes.INT         :Tokenizer.defaultHandler,
-            TokenTypes.COS         :Tokenizer.defaultHandler,
-            TokenTypes.EXP         :Tokenizer.defaultHandler,
-            TokenTypes.FRE         :Tokenizer.defaultHandler,
-            TokenTypes.LEN         :Tokenizer.defaultHandler,
-            TokenTypes.LOG         :Tokenizer.defaultHandler,
-            TokenTypes.POS         :Tokenizer.defaultHandler,
-            TokenTypes.RND         :Tokenizer.defaultHandler,
-            TokenTypes.SGN         :Tokenizer.defaultHandler,
-            TokenTypes.SIN         :Tokenizer.defaultHandler,
-            TokenTypes.SPC         :Tokenizer.defaultHandler,
-            TokenTypes.SQR         :Tokenizer.defaultHandler,
-            TokenTypes.SYS         :Tokenizer.defaultHandler,
-            TokenTypes.TAB         :Tokenizer.defaultHandler,
-            TokenTypes.TAN         :Tokenizer.defaultHandler,
-            TokenTypes.VAL         :Tokenizer.defaultHandler,
-            TokenTypes.TO          :Tokenizer.defaultHandler,
-            TokenTypes.GOTO        :Tokenizer.defaultHandler,
-            TokenTypes.GOSUB       :Tokenizer.defaultHandler,
-            TokenTypes.RUN         :Tokenizer.defaultHandler,
-            TokenTypes.CLOSE       :Tokenizer.defaultHandler,
-            TokenTypes.OPEN        :Tokenizer.defaultHandler,
-            TokenTypes.NEXT        :Tokenizer.defaultHandler,
-            TokenTypes.LIST        :Tokenizer.defaultHandler,
-            TokenTypes.LET         :Tokenizer.ignoreHandler,
-            TokenTypes.FN          :Tokenizer.defaultHandler,
-            TokenTypes.READ        :Tokenizer.defaultHandler,
-            TokenTypes.DATA        :Tokenizer.defaultHandler,
-            TokenTypes.GET         :Tokenizer.defaultHandler,
-            TokenTypes.GET_SHARP   :Tokenizer.defaultHandler,
-            TokenTypes.INPUT_SHARP :Tokenizer.defaultHandler,
-            TokenTypes.PRINT_SHARP :Tokenizer.defaultHandler,
-            TokenTypes.CMD         :Tokenizer.defaultHandler,
-            TokenTypes.SEMICOLON   :Tokenizer.defaultHandler,
-            TokenTypes.DEF         :Tokenizer.defaultHandler,
-            TokenTypes.ON          :Tokenizer.defaultHandler,
-            TokenTypes.INPUT       :Tokenizer.defaultHandler,
-            TokenTypes.DIM         :Tokenizer.defaultHandler,
-            TokenTypes.PRINT       :Tokenizer.defaultHandler,
-            TokenTypes.IF          :Tokenizer.defaultHandler,
-            TokenTypes.THEN        :Tokenizer.defaultHandler,
-            TokenTypes.FOR         :Tokenizer.defaultHandler,
-            TokenTypes.TO          :Tokenizer.defaultHandler,
-            TokenTypes.STEP        :Tokenizer.defaultHandler,
-            
-        }
-    
-
-            
+           
     ##
     #
     #
@@ -287,7 +141,7 @@ class Tokenizer():
     #
     @staticmethod
     def createToken(lexer,match,expression):
-        return ChainToken(match[0],lexer.line+1,lexer.pos+1,expression.type)
+        return ChainToken(match[0],lexer.line,lexer.pos,expression.type)
 
 
     ##
@@ -304,7 +158,7 @@ class Tokenizer():
 
         while lexer.pos < len(line):
 
-            lexer.log( "{}".format(line), "debug")
+            cbas.log( "{}".format(line), "debug")
 
             while True or lexer.pos < len(line):
                 
@@ -325,7 +179,7 @@ class Tokenizer():
                 break
 
         # End of line reached
-        lexer.mode = 0
+        lexer.mode = Lexer.MODE_ASSIGNMENT
         
         if lexer.config.markLineend:
             token = Tokenizer.createUniqueToken(lexer,TokenTypes.LINEEND, lexer.pos)
@@ -354,24 +208,26 @@ class Tokenizer():
                 
                 if token.type in [ TokenTypes.ASSIGNMENT, TokenTypes.EQ]:
                     # We assume the first = is an assgnment, all following are EQ
-                    if lexer.mode == 0 and lexer.config.hasTokenType(TokenTypes.ASSIGNMENT):
+                    if lexer.mode == Lexer.MODE_ASSIGNMENT and lexer.config.hasTokenType(TokenTypes.ASSIGNMENT):
                         token.type = TokenTypes.ASSIGNMENT
-                        lexer.mode = 1
+                        lexer.mode = Lexer.MODE_EQ
                     else:
                         token.type = TokenTypes.EQ
                 
                 # Between "if" and "then" we are in mode 1
                 # Between "FOR" and "TO" we are in mode 1
                 if token.type in [TokenTypes.IF,TokenTypes.FOR]:
-                    lexer.mode = 1
+                    lexer.mode = Lexer.MODE_EQ
 
                 # End of command reached.
                 if token.type in [TokenTypes.COLON, TokenTypes.THEN, TokenTypes.TO]:
-                    lexer.mode = 0
+                    lexer.mode = Lexer.MODE_ASSIGNMENT
 
                 lexer.appendToken(token)
-                lexer.log(((" "*posOld)+"'{}' - ({})").format(match[0],TokenTypes.getString(token.type)),"debug")
-
+                cbas.log(((" "*posOld)+"'{}' - ({})").format(match[0],TokenTypes.toString(token.type)),"debug")
+            else:
+                pass #print("None")
+            
             return True
         return False
 
@@ -381,7 +237,6 @@ class Tokenizer():
     @staticmethod
     def ignoreHandler(lexer,match,expression):
         lexer.pos = match.end()
-        return
 
     ##
     #
@@ -401,3 +256,24 @@ class Tokenizer():
         lexer.pos = match.end()
         return result
 
+    ##
+    #
+    #
+    @staticmethod
+    def identifierHandler(lexer,match,expression):
+        symbolName = match[0]
+        line = lexer.line
+        pos = lexer.pos
+        type = "float"
+
+        if symbolName[-1:] == "%":
+            type = "integer"
+        elif symbolName[-1:] == "$":
+            type = "string"
+
+        symbolId = cbas.symbolTable.addSymbol(type,symbolName,line,pos)
+        
+        result = ChainToken(symbolId,lexer.line,lexer.pos,expression.type)
+        #result = Tokenizer.createToken(lexer,match,expression)
+        lexer.pos = match.end()
+        return result

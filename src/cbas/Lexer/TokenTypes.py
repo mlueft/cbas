@@ -240,6 +240,9 @@ class TokenTypes():
 	WINDOW        = 216
 	XOR           = 217
 
+	# MEX
+	LABEL         = 218
+
 
     
 	__matchTable = {
@@ -362,17 +365,21 @@ class TokenTypes():
 		"then":         THEN,
 		"for":          FOR,
 		"to":           TO,
-		"step":         STEP
+		"step":         STEP,
+		"get":          GET,
+		"get#":         GET_SHARP,
+		"getkey":       GETKEY,
+		"label":        LABEL
 	}
 
 	@staticmethod
-	def getType(value):
+	def toType(value):
 		if value in TokenTypes.__matchTable:
 			return TokenTypes.__matchTable[value]
 		raise ValueError("Token type '{}' not recognized!".format(value))
 
 	@staticmethod
-	def getString(value):
+	def toString(value):
 		for e in TokenTypes.__matchTable:
 			if TokenTypes.__matchTable[e] == value:
 				return e

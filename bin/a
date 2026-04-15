@@ -1,0 +1,9 @@
+1 goto 10 
+3 rem test0
+4 goto 7 
+5 goto 10 
+7 rem test1
+8 goto 10 
+10 goto 3 
+11 rem main0
+12 rem main1

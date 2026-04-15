@@ -1,14 +1,11 @@
-
+import cbas
 import cbas.Compiler.Compiler
 
 Compiler = cbas.Compiler.Compiler.Compiler
 
 def main():
-    configFile  = "/home/work/cbas/config/config.json"
-    #inputFile   = "/home/work/cbas/examples/arithmetic.bas"
-
     
- 
+    cbas.debug = True
     
     log = []
 
@@ -60,6 +57,9 @@ def main():
             ["4 >= 5",False]
         ]
 
+        _tests = [
+            ["10/15-(5+1)",1],
+        ]
         for t in tests:
             compiler = Compiler(1)
             term  = t[0]
@@ -71,10 +71,18 @@ def main():
                 log.append( "{}={} != {}".format(term,result,shall) )
 
     else:
-        compiler = Compiler(2)
+
         inputFile   = "/home/work/cbas/examples/basic_V2.bas"
-        #inputFile   = "/home/work/cbas/examples/test.bas"
+        inputFile   = "/home/work/cbas/examples/a"
+        objectFolder = "/home/work/cbas/obj"
+        binFolder = "/home/work/cbas/bin"
+
+        compiler = Compiler(2)
+        compiler.objectFolder = objectFolder
+        compiler.binFolder = binFolder
+
         compiler.compileFile( inputFile )
+
 
     print("==================")
     if len(log)==0:

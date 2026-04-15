@@ -1,3 +1,4 @@
+import cbas
 import cbas.Ast.Expressions
 import cbas.Parser.BindingPower
 import cbas.Parser.Lookups
@@ -21,12 +22,12 @@ class StatementParser():
     #
     @staticmethod
     def parseStatement(parser):
-        parser.log("start:parseStatement ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
+        cbas.log("start:parseStatement ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
         tokenType = parser.currentTokenType
 
         if tokenType in Lookups.statement:
             statementFunction = Lookups.Lookups.statement[tokenType]
-            parser.log("end:parseStatement", "debug" )
+            cbas.log("end:parseStatement", "debug" )
             return statementFunction()
 
         expression = ExpressionParser.parseExpression( parser, 0)
@@ -34,7 +35,7 @@ class StatementParser():
 
         result = expression
 
-        parser.log("end:parseStatement", "debug" )
+        cbas.log("end:parseStatement", "debug" )
         return result
         
         
@@ -62,7 +63,13 @@ class Statement(TreeNode):
     def __init__(self, value = None):
         super().__init__()
         self.value = value
+        self._basicGenerated = False
 
+    def toBasic(self):
+        if self._basicGenerated:
+            return None
+        self._basicGenerated = True        
+        return [self.value]
 
 ##
 # {
@@ -91,7 +98,6 @@ class BlockStatement(Statement):
 
     def _getNodes(self):
         return self.statements
-
 
 ## expression 
 # 4+6

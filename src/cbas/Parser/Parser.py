@@ -1,3 +1,4 @@
+import cbas
 import cbas.Parser.Lookups
 import cbas.Lexer.TokenTypes
 import cbas.Ast.Statements
@@ -10,7 +11,6 @@ Lookups = cbas.Parser.Lookups.Lookups
 class Parser():
 
 	def __init__(self):
-		self.debug = False
 		self.tokens = None
 		self.pos	= 0
 		self.errors = []
@@ -19,19 +19,8 @@ class Parser():
 		self.__first = None
 		self.indentation = 0
 		
-	def log(self,message, type="log"):
-		
-		if message.lower()[0:4] == "end:":
-			self.indentation -= 4
-			
-		if self.debug:
-			print( (" "*self.indentation)+message )
-		
-		if message.lower()[0:6] == "start:":
-			self.indentation += 4
-
 	def parse(self, tokens):
-		self.log("start:parsing()", "debug")
+		cbas.log("start:parsing()", "debug")
 
 		if self.config is None:
 			raise ValueError("Parser context not set!")
@@ -41,12 +30,12 @@ class Parser():
 		self.__first = None
 		statements = []
 		while self.hasTokens:
-			self.log("=========================================", "debug")
-			self.log("while hasToken ...", "debug")
-			self.log("=========================================", "debug")
+			cbas.log("=========================================", "debug")
+			cbas.log("while hasToken ...", "debug")
+			cbas.log("=========================================", "debug")
 			statements.append( StatementParser.parseStatement(self) )
 		
-		self.log("end:parsing()", "debug")
+		cbas.log("end:parsing()", "debug")
 		return BlockStatement(statements)
 
 	def createLookupTables(self):
@@ -61,7 +50,7 @@ class Parser():
 			elif token.category == "statement":
 				Lookups.registerStatement( token.type, token.handler )
 			else:
-				raise ValueError("Category for '{}' not found!".format( TokenTypes.getString(token.type) ))
+				raise ValueError("Category for '{}' not found!".format( TokenTypes.toString(token.type) ))
 		
 	@property
 	def currentToken(self):
@@ -72,8 +61,12 @@ class Parser():
 		return self.tokens[self.pos].type
 
 	@property
+	def lastTokenType(self):
+		return self.tokens[self.pos-1].type
+
+	@property
 	def hasTokens(self):
-		return self.pos < len(self.tokens) and self.currentTokenType != TokenTypes.EOF
+		return self.pos < len(self.tokens) and self.currentTokenType != TokenTypes.EOF #and self.currentTokenType != TokenTypes.LINEEND
 	
 	def advance(self):
 		tk = self.currentToken
@@ -90,7 +83,7 @@ class Parser():
 
 		if type != tokenType:
 			if error == None:
-				raise ValueError("Expected {} but received {}!".format( tokenType, TokenTypes.getString(type) ))
+				raise ValueError("Expected {} but received {}!".format( TokenTypes.toString(tokenType), TokenTypes.toString(type) ))
 			
 			raise ValueError( error )
 		

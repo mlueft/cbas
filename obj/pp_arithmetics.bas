@@ -1,3 +1,9 @@
+test.pp is imported
+...................
+
+
+
+
 
 
 CONTENT-"p0"-1024-   |test
@@ -7,11 +13,11 @@ MACRO
 a
 
 test.pp is imported
-BB
+...................
 
 !.
 test.pp is imported
-.
+...................
 !BB
 
 hello world!
@@ -21,14 +27,15 @@ OK - a ist definiert.
 OK - a ist nicht definiert. 
 
 test.pp is imported
-BB
+...................
   test.pp is imported
-  BB
+  ...................
     test.pp is imported
-    BB
+    ...................
 
 test.pp is imported
-BB
+...................
+
 
 OK - aa = 4
 

@@ -1,3 +1,5 @@
+import cbas
+from cbas.Exceptions.Exceptions import SemanticErrorException
 import cbas.Events.EventManager
 import cbas.Events.TreeEvent
 import cbas.DataStructures.TraverseMode
@@ -43,7 +45,7 @@ class TreeNode():
     #
     #
     def debug(self,level=0):
-        print( "{:<4}:{}{}".format(self.id, " "*level*self.indentation, self) )
+        cbas.log( "{:<4}:{}{}".format(self.id, " "*level*self.indentation, self), "debug" )
         nodes = self._getNodes()
         for t in nodes:
             t.debug(level+1)
@@ -56,7 +58,10 @@ class TreeNode():
         #
         # Call the optimizer
         #
-        handler(self,TraverseMode.OUTLINE)
+        try:
+            handler(self,TraverseMode.OUTLINE)
+        except SemanticErrorException as ex:
+            cbas.log( ex.message )
 
         # We traverse all leafs first.
         nodes = self._getNodes()
@@ -83,7 +88,10 @@ class TreeNode():
         #
         # Call the optimizer
         #
-        handler(self,TraverseMode.BOTTOM_UP)
+        try:
+            handler(self,TraverseMode.BOTTOM_UP)
+        except SemanticErrorException as ex:
+            cbas.log( ex.message )
 
     ##
     #
@@ -93,12 +101,15 @@ class TreeNode():
         #
         # Call the optimizer
         #
-        handler(self,TraverseMode.TOP_DOWN)
-
+        try:
+            if not self.isLeaf:
+                handler(self,TraverseMode.TOP_DOWN)
+        except SemanticErrorException as ex:
+            cbas.log( ex.message )
+        
         # We traverse all leafs first.
         nodes = self._getNodes()
         for t in nodes:
-            if t.isLeaf:
                 t.topDown(handler)
 
         # then we traverse all nodes.
@@ -111,6 +122,8 @@ class TreeNode():
     #
     #
     def replace(self,replacement):
+        if replacement == self:
+            return
         event = TreeEvent(self,replacement)
         self.__onReplace(event)
 
