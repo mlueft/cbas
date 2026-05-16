@@ -2,6 +2,8 @@ import cbas
 import cbas.Ast.Expressions
 import cbas.DataStructures.TraverseMode
 import cbas.Lexer.TokenTypes
+import cbas.Lexer.Tokens
+
 from cbas.Exceptions.Exceptions import SemanticErrorException
 
 TraverseMode = cbas.DataStructures.TraverseMode.TraverseMode
@@ -10,7 +12,7 @@ PrimaryExpression = cbas.Ast.Expressions.PrimaryExpression
 GroupingExpression = cbas.Ast.Expressions.GroupingExpression
 PrefixExpression = cbas.Ast.Expressions.PrefixExpression
 TokenTypes = cbas.Lexer.TokenTypes.TokenTypes
-
+ChainToken = cbas.Lexer.Tokens.ChainToken
 
 class AstOptimizer():
     
@@ -143,7 +145,7 @@ class ArithmeticOptimizer(AstOptimizer):
         elif op == "/": r = lv/rv
         else:return node
 
-        replacement = PrimaryExpression("float",r)
+        replacement = PrimaryExpression("float",r, ChainToken(str(r),0,0,TokenTypes.FLOAT ) )
 
         #if node.right.tag == "int" or node.left.tag == "int":
         #    replacement.tag   = "int"

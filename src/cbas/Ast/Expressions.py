@@ -430,7 +430,7 @@ class ExpressionParser():
         # We skip "on"
         parser.advance()
 
-        index = ExpressionParser.parsePrimaryExpression(parser)
+        index = ExpressionParser.parseExpression(parser, BindingPower.DEFAULT)
 
         # We expect goto or gosub
         if not parser.currentTokenType in [TokenTypes.GOTO, TokenTypes.GOSUB]:
@@ -440,7 +440,7 @@ class ExpressionParser():
 
         lineNumbers = []
         while parser.currentTokenType not in [TokenTypes.LINEEND,TokenTypes.COLON,TokenTypes.EOF, TokenTypes.LINENUMBER]:
-            right = ExpressionParser.parsePrimaryExpression(parser)
+            right = ExpressionParser.parseExpression(parser, BindingPower.DEFAULT)
             lineNumbers.append(right)
             
             if parser.currentTokenType in[TokenTypes.COMMA]:

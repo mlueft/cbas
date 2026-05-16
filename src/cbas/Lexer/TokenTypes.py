@@ -243,6 +243,9 @@ class TokenTypes():
 	# MEX
 	LABEL         = 218
 
+	TRUE          = 219
+	FALSE         = 220
+
 
     
 	__matchTable = {
@@ -369,7 +372,9 @@ class TokenTypes():
 		"get":          GET,
 		"get#":         GET_SHARP,
 		"getkey":       GETKEY,
-		"label":        LABEL
+		"label":        LABEL,
+		"true":         TRUE,
+		"false":        FALSE
 	}
 
 	@staticmethod

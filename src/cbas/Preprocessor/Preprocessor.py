@@ -104,7 +104,6 @@ class Preprocessor():
                 handler(outputStream, line)
             else:
                 if self.writeLine:
-                    print(indentation+self.symbolTable.replaceSymbols(line) )
                     outputStream.write(indentation+self.symbolTable.replaceSymbols(line) )
             
             line = inputStream.readline()

@@ -1,4 +1,5 @@
 import os
+import struct
 
 import cbas
 import cbas.Config.Config
@@ -28,15 +29,19 @@ class Compiler():
     #
     def __init__(self, configIndex=0):
         
+        self.objectFolder = None
+        self.binFolder = None
+        self.lineNumberStart = 1
+        self.lineNumberStep = 1
+        self.beautify = False
+        self.basicStartAddress = 2048
+        self.basicLines = []
+
         self.config = self._createConfig(configIndex)
         self.lexer  = self._createLexer(configIndex)
         self.parser = self._createParser(configIndex)
-        self.basicBuilder = self._createBasicBuilder(configIndex)
-        self.linker = self._createLinker(configIndex)
-        self.objectFolder = None
-        self.binFolder = None
-
-        self.basicLines = []
+        self.codeBuilder = self._createBasicBuilder(configIndex)
+        self.linker = self._createLinker()
 
     def _createConfig(self, configIndex):
         return Config(configIndex)
@@ -50,11 +55,14 @@ class Compiler():
         return result
    
     def _createBasicBuilder(self, configIndex):
-        result = BasicBuilder()
+        result = BasicBuilder(configIndex,self.beautify)
         return result
 
-    def _createLinker(self, configIndex):
-        result = Linker()
+    def _createLinker(self, prg=True):
+        result = Linker(prg)
+        result.lineNumberStart = self.lineNumberStart
+        result.lineNumberStep = self.lineNumberStep
+        result.basicStartAddress = self.basicStartAddress
         return result
     
     def __runLexer(self, inputFile):
@@ -84,7 +92,7 @@ class Compiler():
         cbas.log("ast optimizer ...".format(), "debug")
         conf = self.config.getAstOptimizerConfig(compilerPass)
         for o in conf.handlers:
-            print( TraverseMode.toString(o[1]), o[0])
+            #print( TraverseMode.toString(o[1]), o[0])
             if o[1] == TraverseMode.TOP_DOWN:
                 ast.topDown(o[0].main)
             elif o[1] == TraverseMode.BOTTOM_UP:
@@ -94,9 +102,10 @@ class Compiler():
 
         return ast
 
-    def __runBasicBuilder(self,ast):
-        cbas.log("BasicBuilder ...".format(), "debug")
-        return self.basicBuilder.main(ast)
+    def __runCodeBuilder(self,ast):
+        cbas.log("CodeBuilder ...".format(), "debug")
+        self.resetAst(ast)
+        return self.codeBuilder.main(ast)
 
     def __runLinker(self,lines):
         return self.linker.main(lines)
@@ -128,9 +137,19 @@ class Compiler():
         except FileNotFoundError as e:
             pass
 
-        with open(file, 'w') as f:
+        with open(file, 'wb') as f:
             for line in lines:
-                f.write("{}\n".format(line))
+                b1 = bytes(line)
+                #for b in line:
+                #b1 = (b).to_bytes(1, byteorder='big', signed=False)
+                #b1 = struct.pack("{}b".format(len(line)), *line)
+                f.write(b1)
+
+    def resetAst(self,ast):
+        ast.topDown(self.astResetHandler)
+
+    def astResetHandler(self, node, traverseMode):
+        node._basicGenerated = False
 
     ##
     #
@@ -187,21 +206,38 @@ class Compiler():
         # DEBUG
         self.__debugAst(ast)
 
+        #
+        # CODEBUILDER
+        #
+        codeLines = None
+        if True:
+            self.codeBuilder = self._createBasicBuilder(BasicBuilder.PRG)
+            self.linker=self._createLinker(True)
+            codeLines = self.__runCodeBuilder(ast)
+            codeLines = self.__runLinker(codeLines)
+
+        #
         # BASICBUILDER
-        lines = self.__runBasicBuilder(ast)
+        #
+        basicLines = None
+        if True:
+            self.codeBuilder = self._createBasicBuilder(BasicBuilder.BASIC)
+            self.linker=self._createLinker(False)
+            basicLines = self.__runCodeBuilder(ast)
+            basicLines = self.__runLinker(basicLines)
 
-        # Linker
-        lines = self.__runLinker(lines)
 
 
+        if basicLines is not None:
+            if os.path.isdir( self.objectFolder ):
+                basicFile = os.path.join( self.binFolder, os.path.basename(inputFile) )+".basic"
+                self.writeLines(basicLines, basicFile)
 
-        if os.path.isdir( self.objectFolder ):
-            basicFile = os.path.join( self.objectFolder, os.path.basename(inputFile) )+".basic"
-            self.writeLines(lines, basicFile)
 
-        if os.path.isdir( self.binFolder ):
-            basicFile = os.path.join( self.binFolder, os.path.basename(inputFile) )
-            self.writeLines(lines, basicFile)
+        if codeLines is not None:
+            if os.path.isdir( self.binFolder ):
+                basicFile = os.path.join( self.binFolder, os.path.basename(inputFile)+".prg" )
+                self.writeLines(codeLines, basicFile)
 
 
         cbas.symbolTable.debug()
