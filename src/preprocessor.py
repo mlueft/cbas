@@ -27,7 +27,7 @@ def runPreProcessor(inputFile, outputFolder, libFolders):
 
 def main():
     
-    inputFile    = r"./examples/pp_include.bas"
+    inputFile    = r"./examples/a"
     outputFolder = r"/home/work/cbas/obj"
     libFolders   = [
         r"/home/work/cbas/lib"

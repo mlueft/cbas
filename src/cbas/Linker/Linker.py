@@ -22,6 +22,11 @@ class Linker():
         self.lineNumber = self.lineNumberStart
         self.currentAddress = self.basicStartAddress+1
 
+    def __isLabelDefinition(self, line):
+        pattern = re.compile(b"^@label_[0-9]{5}")
+        matches = pattern.findall(line)
+        return len(matches) > 0
+    
     def main(self,lines):
         
         self.resetLineNumber()
@@ -40,35 +45,42 @@ class Linker():
         #
         # We scan for label definitions
         #
-        for line in lines:
-            nextLineNumber = self.lineNumber+self.lineNumberStep
-            pattern = re.compile(b"^@label_[0-9]{5}")
-            matches = pattern.findall(line)
-            for match in matches:
-                labels[match]=nextLineNumber
-                pass
-            self.lineNumber = nextLineNumber
+        lineNumber = self.lineNumberStart
+        for i in range(0,len(lines)-1):
+            currentline = lines[i]
+            
+            #
+            # If the line is a label definition, we must calculate the line number
+            # of the next basic line.
+            #
+            if self.__isLabelDefinition(currentline):
+                nextLine = currentline
+                nextLineNumber = lineNumber
+                while self.__isLabelDefinition(nextLine):
+                    nextLineNumber += self.lineNumberStep
+                    i+=1
+                    nextLine = lines[i]
 
+                labels[bytes(currentline.strip())]=nextLineNumber
+            lineNumber += self.lineNumberStep
 
         self.resetLineNumber()
 
         for line in lines:
             
             # Is the line labeldefinition
-            pattern = re.compile(b"^@label_[0-9]{5}")
-            matches = pattern.findall(line)
-            if len(matches) > 0:
-                for match in matches:
-                    #line = "rem {}".format(match)
-                    line = None
+            
+            if self.__isLabelDefinition(line):
+
+                #
+                # Lines with leveldefinitions are skipped.
+                #
+                line = None
 
             else:
                 # replace labels in references
                 for k,v in labels.items():
-                    if self.prg:
-                        line = line.replace(k,bytearray(str(v),encoding="ascii"))
-                    else:
-                        line = line.replace(k,bytearray(str(v),encoding="ascii"))
+                    line = line.replace(k,bytearray(str(v),encoding="ascii"))
 
             if line is not None:
                 l = bytearray()

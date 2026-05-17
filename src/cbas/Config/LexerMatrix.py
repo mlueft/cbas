@@ -305,7 +305,7 @@ class LexerMatrix():
         "eq":                   { "order": 3160, "handler": Tokenizer.defaultHandler     , "type": TokenTypes.EQ,          "expression": "(?i)\\=" },
         "assignment":           { "order": 3161, "handler": Tokenizer.defaultHandler     , "type": TokenTypes.ASSIGNMENT,  "expression": "(?i)\\=" },
         "comma":                { "order": 3170, "handler": Tokenizer.defaultHandler     , "type": TokenTypes.COMMA,       "expression": "(?i)\\," },
-        "identifier":           { "order": 3180, "handler": Tokenizer.identifierHandler , "type": TokenTypes.IDENTIFIER,  "expression": "(?i)[a-z]{1}[a-z0-9]*[$]?[%$]{0,1}" },
+        "identifier":           { "order": 3180, "handler": Tokenizer.identifierHandler  , "type": TokenTypes.IDENTIFIER,  "expression": "(?i)[a-z_]{1}[a-z0-9_]*[$]?[%$]{0,1}" },
         "whitespace":           { "order": 3190, "handler": Tokenizer.ignoreHandler      , "type": TokenTypes.WHITESPACE,  "expression": "[\\s]" },
         "envelope":             { "order":  140, "handler": Tokenizer.defaultHandler     , "type": TokenTypes.ENVELOPE,    "expression": "(?i)ENVELOPE" },
 

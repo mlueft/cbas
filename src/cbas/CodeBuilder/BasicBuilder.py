@@ -48,6 +48,7 @@ class BasicBuilder():
         if self.configIndex == BasicBuilder.BASIC:
             self.EOL = b"\n"
 
+        # For these Types float parameters are cast to integer
         self.castTypes = [
             TokenTypes.POKE,
             TokenTypes.PEEK,
@@ -73,6 +74,11 @@ class BasicBuilder():
             TokenTypes.CMD,
             TokenTypes.ON,
             TokenTypes.INPUT
+        ]
+
+        self.skipOpen = [
+            TokenTypes.SPC,
+            TokenTypes.TAB
         ]
 
     def _createTokenizer(self, configIndex):
@@ -111,7 +117,6 @@ class BasicBuilder():
         if _type == BinaryExpression:return self.renderBinaryExpression
         if _type == PrimaryExpression:return self.renderPrimaryExpression
 
-
     def astHandler(self, node, traverseMode):
         handler = self.getHandler(node)
         lines = handler(node)
@@ -123,12 +128,10 @@ class BasicBuilder():
                 l = self.resolveSymbols(l)
                 self.codeLines.append(l+self.EOL)
 
-
     def main(self, ast):
         self.codeLines = []
         ast.topDown(self.astHandler)
         return self.codeLines
-
 
     def renderBlockStatement(self,node):
         if node._basicGenerated:
@@ -532,7 +535,7 @@ class BasicBuilder():
         
         #line += "("
         # tab and spc must not have a ( in prg!
-        if not node.function.type in [TokenTypes.SPC,TokenTypes.TAB]:
+        if not node.function.type in self.skipOpen:
             line += self.tokenizer.tokenize(TokenTypes.ROUNDOPEN)
         
         for p in node.parameters:

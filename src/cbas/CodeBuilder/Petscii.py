@@ -592,7 +592,12 @@ class Petscii():
             self.__petscii.append(e)
         for e in self.__bastext:
             self.__petscii.append(e)
+        
+        self.__petscii = sorted(self.__petscii, key=self.cmp, reverse=True)
 
+    def cmp(self,value):
+        return len(value[0])
+    
     def getPetscii(self,char):
         for e in self.__petscii:
             if e[0] == char:
@@ -601,8 +606,27 @@ class Petscii():
     def toPetscii(self, value):
         result = bytearray()
 
-        for c in value:
-            result += self.getPetscii(c)
+        i = 0
+        while i < len(value):
+            c = value[i]
+            v = c
+            if c == "{":
+                while c != "}":
+                    i+=1
+                    c = value[i]
+                    v += c
+                
+            p = self.getPetscii(v)
+            if p is None:
+                p = bytearray()
+                # v can contain characters petscii don't know
+                for c in v:
+                    c = self.getPetscii(c)
+                    if c is not None:
+                        p += c
+
+            result += p
+            i += 1
 
         return result
     

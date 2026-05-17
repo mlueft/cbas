@@ -9,13 +9,16 @@ Petscii = cbas.CodeBuilder.Petscii.Petscii
 class Tokenizer():
 
     def __init__(self, configIndex):
+        
         self.configIndex = configIndex
 
-        self.tokens = {
-            #                              BASIC         V2     V35     V4     V7   
+        # Keywords and symbols are converted to these tokens.
+        self.basicTokens = {
+            #                              BASIC         V2        V35     V4     V7   
             TokenTypes.MINUS:            [ [b"-"      ], [171],              ],
             TokenTypes.MUL:              [ [b"*"      ], [172],              ],
             TokenTypes.DIV:              [ [b"/"      ], [173],              ],
+            TokenTypes.NEQ:              [ [b"<>"     ], [179,177],          ],
             TokenTypes.LESS:             [ [b"<"      ], [179],              ],
             TokenTypes.EQ:               [ [b"="      ], [178],              ],
             TokenTypes.ADD:              [ [b"+"      ], [170],              ],
@@ -40,7 +43,7 @@ class Tokenizer():
             TokenTypes.FOR:              [ [b"for"    ], [129],              ],
             TokenTypes.FRE:              [ [b"fre"    ], [184],              ],
             TokenTypes.GET:              [ [b"get"    ], [161],              ],
-            TokenTypes.GET_SHARP:        [ [b"get#"   ], [161,35]            ],
+            TokenTypes.GET_SHARP:        [ [b"get#"   ], [161,35],           ],
             TokenTypes.GO:               [ [b"go"     ], [203],              ],
             TokenTypes.GOSUB:            [ [b"gosub"  ], [141],              ],
             TokenTypes.GOTO:             [ [b"goto"   ], [137],              ],
@@ -169,8 +172,8 @@ class Tokenizer():
             TokenTypes.SCALE:            [ [b""       ], []                  ],
             TokenTypes.SCNCLR:           [ [b""       ], []                  ],
             TokenTypes.SCRATCH:          [ [b""       ], []                  ],
-            "TokenTypes.shift":          [ [b""       ], []                  ],
-            "TokenTypes.shift":          [ [b""       ], []                  ],
+            #TokenTypes.shift:            [ [b""       ], []                  ],
+            #TokenTypes.shift:            [ [b""       ], []                  ],
             TokenTypes.SLEEP:            [ [b""       ], []                  ],
             TokenTypes.SLOW:             [ [b""       ], []                  ],
             TokenTypes.SOUND:            [ [b""       ], []                  ],
@@ -192,25 +195,25 @@ class Tokenizer():
             TokenTypes.WIDTH:            [ [b""       ], []                  ],
             TokenTypes.WINDOW:           [ [b""       ], []                  ],
             TokenTypes.XOR:              [ [b""       ], []                  ],
-            TokenTypes.COMMA:            [ [b","      ], [44]                  ],
-            TokenTypes.SEMICOLON:        [ [b";"      ], [59]                  ],
-            TokenTypes.COLON:            [ [b":"      ], [58]                  ],
-            TokenTypes.ROUNDOPEN:        [ [b"("      ], [40]                  ],
-            TokenTypes.ROUNDCLOSE:       [ [b")"      ], [41]                  ],
-            TokenTypes.PISIGN:           [ [b"*"      ], [255]                  ],
-            TokenTypes.TRUE:             [ [b"0"      ], [0]                  ],
-            TokenTypes.FALSE:            [ [b"-1"     ], [-1]                  ]
+            TokenTypes.COMMA:            [ [b","      ], [44]                ],
+            TokenTypes.SEMICOLON:        [ [b";"      ], [59]                ],
+            TokenTypes.COLON:            [ [b":"      ], [58]                ],
+            TokenTypes.ROUNDOPEN:        [ [b"("      ], [40]                ],
+            TokenTypes.ROUNDCLOSE:       [ [b")"      ], [41]                ],
+            TokenTypes.PISIGN:           [ [b"*"      ], [255]               ],
+            TokenTypes.TRUE:             [ [b"0"      ], [0]                 ],
+            TokenTypes.FALSE:            [ [b"-1"     ], [-1]                ]
 
         }
 
+        # Values of these types are unchanged.
         self.valueTokens = [
             TokenTypes.COMMENT,
             TokenTypes.IDENTIFIER,
-            #TokenTypes.INTEGER,
-            TokenTypes.LABEL,
-            #TokenTypes.FLOAT
+            TokenTypes.LABEL
         ]
 
+        # Conversion for strings.
         self.petscii = Petscii()
 
     def tokenizeString(self,tag,value):
@@ -268,27 +271,36 @@ class Tokenizer():
     
     def tokenize(self, tokenType, value=None):
 
-        # Basictokens
-        if tokenType in self.tokens:
+        #
+        # Key word tokens
+        #
+        if tokenType in self.basicTokens:
             result = bytearray()
-            _bytes = self.tokens[tokenType][self.configIndex]
+            _bytes = self.basicTokens[tokenType][self.configIndex]
             for b in _bytes:
                 if type(b) == type(1):
+                    # We got numbers from tokens and convert into bytes.
                     #b1 = bytes(str(b),"ascii")
                     b1 = b.to_bytes(length=1, byteorder='little')
                     result += b1
                 else:
+                    # We gor bytes direktly from tokens
                     result += b
+
             return result
 
-        st = cbas.symbolTable
+        #st = cbas.symbolTable
         
-        # symbols
+        #
+        # For some Tokens the value remains unchanged.
+        #
         for t in self.valueTokens:
             if tokenType == t:
                 return bytearray(str(value), "ascii")
 
+        #
         # literals
+        #
         if tokenType == TokenTypes.STRING:
             return self.tokenizeString(tokenType, value)
         elif tokenType == TokenTypes.INTEGER:
