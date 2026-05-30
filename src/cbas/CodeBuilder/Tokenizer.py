@@ -200,13 +200,14 @@ class Tokenizer():
             TokenTypes.COLON:            [ [b":"      ], [58]                ],
             TokenTypes.ROUNDOPEN:        [ [b"("      ], [40]                ],
             TokenTypes.ROUNDCLOSE:       [ [b")"      ], [41]                ],
-            TokenTypes.PISIGN:           [ [b"*"      ], [255]               ],
+            TokenTypes.PISIGN:           [ [b"{pi}"   ], [255]               ],
             TokenTypes.TRUE:             [ [b"0"      ], [0]                 ],
-            TokenTypes.FALSE:            [ [b"-1"     ], [-1]                ]
+            TokenTypes.FALSE:            [ [b"-1"     ], [1]                ]
 
         }
 
         # Values of these types are unchanged.
+        # All other values are tokenized
         self.valueTokens = [
             TokenTypes.COMMENT,
             TokenTypes.IDENTIFIER,
@@ -214,7 +215,10 @@ class Tokenizer():
         ]
 
         # Conversion for strings.
-        self.petscii = Petscii()
+        self.petscii = self._createPetscii()
+
+    def _createPetscii(self):
+        return Petscii()
 
     def tokenizeString(self,tag,value):
         result = bytearray()
@@ -284,7 +288,7 @@ class Tokenizer():
                     b1 = b.to_bytes(length=1, byteorder='little')
                     result += b1
                 else:
-                    # We gor bytes direktly from tokens
+                    # We got bytes direktly from tokens
                     result += b
 
             return result

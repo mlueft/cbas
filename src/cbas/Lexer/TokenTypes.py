@@ -246,7 +246,7 @@ class TokenTypes():
 	TRUE          = 219
 	FALSE         = 220
 
-
+	NAMESPACE     = 221	
     
 	__matchTable = {
 		"undefined":   UNDEFINED,

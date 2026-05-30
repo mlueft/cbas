@@ -12,16 +12,16 @@ TokenTypes = cbas.Lexer.TokenTypes.TokenTypes
 
 BlockStatement = cbas.Ast.Statements.BlockStatement
 ExpressionStatement = cbas.Ast.Statements.ExpressionStatement
-InputExpression = cbas.Ast.Expressions.InputExpression
-PrintExpression = cbas.Ast.Expressions.PrintExpression
-ForExpression = cbas.Ast.Expressions.ForExpression
-IfExpression = cbas.Ast.Expressions.IfExpression
-DimExpression = cbas.Ast.Expressions.DimExpression
+InputStatement = cbas.Ast.Statements.InputStatement
+PrintStatement = cbas.Ast.Statements.PrintStatement
+ForStatement = cbas.Ast.Statements.ForStatement
+IfStatement = cbas.Ast.Statements.IfStatement
+DimStatement = cbas.Ast.Statements.DimStatement
 OnExpression = cbas.Ast.Expressions.OnExpression
-FunctionDefinitionExpression = cbas.Ast.Expressions.FunctionDefinitionExpression
+FunctionDefinitionStatement = cbas.Ast.Statements.FunctionDefinitionStatement
 FunctionCallExpression = cbas.Ast.Expressions.FunctionCallExpression
-StatementExpression = cbas.Ast.Expressions.StatementExpression
-CallExpression = cbas.Ast.Expressions.CallExpression
+StatementStatement = cbas.Ast.Statements.StatementStatement
+CallExpression = cbas.Ast.Expressions.ProcesureCallExpression
 AssignmentExpression = cbas.Ast.Expressions.AssignmentExpression
 GroupingExpression = cbas.Ast.Expressions.GroupingExpression
 PrefixExpression = cbas.Ast.Expressions.PrefixExpression
@@ -85,6 +85,16 @@ class BasicBuilder():
         return Tokenizer(configIndex)
     
     def resolveSymbols(self,line):
+
+        #
+        # OPEN SCOPE
+        #
+        pattern = re.compile(b".*\{.*")
+        matches = pattern.findall(line)
+        for match in matches:
+            cbas.symbolTable.openScope()
+
+
         #line = line.decode("ascii")
         pattern = re.compile(b"#[0-9][0-9][0-9]")
         matches = pattern.findall(line)
@@ -94,6 +104,15 @@ class BasicBuilder():
             
             a = bytearray(variableName.upper(),"ascii")
             line = line.replace( symbolName,a)
+
+        #
+        # CLOSE SCOPE
+        #
+        pattern = re.compile(b".*\}.*")
+        matches = pattern.findall(line)
+        for match in matches:
+            cbas.symbolTable.closeScope()
+
         return line
 
     def getHandler(self,node):
@@ -101,15 +120,15 @@ class BasicBuilder():
 
         if _type == BlockStatement:return self.renderBlockStatement
         if _type == ExpressionStatement:return self.renderExpressionStatement
-        if _type == InputExpression:return self.renderInputExpression
-        if _type == PrintExpression:return self.renderPrintExpression
-        if _type == ForExpression:return self.renderForExpression
-        if _type == IfExpression:return self.renderIfExpression
-        if _type == DimExpression:return self.renderDimExpression
+        if _type == InputStatement:return self.renderInputExpression
+        if _type == PrintStatement:return self.renderPrintExpression
+        if _type == ForStatement:return self.renderForExpression
+        if _type == IfStatement:return self.renderIfExpression
+        if _type == DimStatement:return self.renderDimExpression
         if _type == OnExpression:return self.renderOnExpression
-        if _type == FunctionDefinitionExpression:return self.renderFunctionDefinitionExpression
+        if _type == FunctionDefinitionStatement:return self.renderFunctionDefinitionExpression
         if _type == FunctionCallExpression:return self.renderFunctionCallExpression
-        if _type == StatementExpression:return self.renderStatementExpression
+        if _type == StatementStatement:return self.renderStatementExpression
         if _type == CallExpression:return self.renderCallExpression
         if _type == AssignmentExpression:return self.renderAssignmentExpression
         if _type == GroupingExpression:return self.renderGroupingExpression
@@ -125,12 +144,39 @@ class BasicBuilder():
             bla=0
             for l in lines:
 
-                l = self.resolveSymbols(l)
+                #l = self.resolveSymbols(l)
                 self.codeLines.append(l+self.EOL)
 
     def main(self, ast):
         self.codeLines = []
+
+        #
+        # Generate code lines
+        #
         ast.topDown(self.astHandler)
+
+        #
+        # Replace symbols with variables
+        #
+        for i in range(0,len(self.codeLines)):
+            self.codeLines[i] = self.resolveSymbols(self.codeLines[i])
+
+        #
+        # Codelines cleanup
+        #
+        tmp = []
+        for line in self.codeLines:
+
+            #
+            # SCOPE
+            #
+            pattern = re.compile(b".*[\{\}].*")
+            matches = pattern.findall(line)
+            if not matches:
+                tmp.append(line)
+
+        self.codeLines = tmp
+
         return self.codeLines
 
     def renderBlockStatement(self,node):
@@ -138,8 +184,9 @@ class BasicBuilder():
             return None
         node._basicGenerated = True
 
-
         result = []
+        if node.isScope:
+            result.append(b"{")
 
         for s in node.statements:
             handler = self.getHandler(s)
@@ -148,6 +195,9 @@ class BasicBuilder():
                 for b1 in b:
                     result.append(b1)
 
+        if node.isScope:
+            result.append(b"}")
+        
         return result
     
     def renderExpressionStatement(self,node):
@@ -306,7 +356,7 @@ class BasicBuilder():
 
         if len(node.trueCode)>0:
             t = type(node.trueCode[0])
-            if t == cbas.Ast.Expressions.StatementExpression:
+            if t == cbas.Ast.Statements.StatementStatement:
                 if node.trueCode[0].statement.type == TokenTypes.GOTO:
                     line += self.prittifier
         

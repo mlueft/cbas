@@ -68,7 +68,18 @@ class Config():
         
         for key in cbas.Config.LexerMatrix.LexerMatrix.Matrix.keys():
             if cbas.Config.LexerMatrix.LexerMatrix.Matrix[key][self.configIndex] == 1:
+                
                 token = cbas.Config.LexerMatrix.LexerMatrix.Tokens[key]
+                
+                if token["type"] == "alias":
+                    target = token["target"]
+                    tokenTmp = cbas.Config.LexerMatrix.LexerMatrix.Tokens[target]
+                    if "expression" in token:
+                        tokenTmp["expression"] = token["expression"]
+                    if "order" in token:
+                        tokenTmp["order"] = token["order"]
+                    token = tokenTmp
+
                 result.tokens.append(
                     LexerConfigToken(
                         token["type"],

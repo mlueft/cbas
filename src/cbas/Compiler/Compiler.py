@@ -37,14 +37,15 @@ class Compiler():
         self.basicStartAddress = 2048
         self.basicLines = []
 
-        self.config = self._createConfig(configIndex)
-        self.lexer  = self._createLexer(configIndex)
-        self.parser = self._createParser(configIndex)
-        self.codeBuilder = self._createBasicBuilder(configIndex)
-        self.linker = self._createLinker()
+        self.__config = self._createConfig(configIndex)
+        self.__lexer  = self._createLexer(configIndex)
+        self.__parser = self._createParser(configIndex)
+        self.__codeBuilder = self._createBasicBuilder(configIndex)
+        self.__linker = self._createLinker()
 
     def _createConfig(self, configIndex):
-        return Config(configIndex)
+        result = Config(configIndex)
+        return result
     
     def _createLexer(self, configIndex):
         result = Lexer()
@@ -65,18 +66,19 @@ class Compiler():
         result.basicStartAddress = self.basicStartAddress
         return result
     
+
     def __runLexer(self, inputFile):
         cbas.log("", "debug")
         cbas.log("lexer ...", "debug")
         cbas.log("============================================", "debug")
-        self.lexer.config = self.config.getLexerConfig()
-        self.lexer.tokenizeFile(inputFile)
+        self.__lexer.config = self.__config.getLexerConfig()
+        self.__lexer.tokenizeFile(inputFile)
 
     def __runTokenChainOptimizer(self, lex):
         cbas.log("", "debug")
         cbas.log("chainoptimizing ...", "debug")
         cbas.log("============================================", "debug")
-        config = self.config.getTokenChainOptimizerConfig()
+        config = self.__config.getTokenChainOptimizerConfig()
         for o in config.passes:
             o["instance"].main(lex)
 
@@ -84,13 +86,13 @@ class Compiler():
         cbas.log("", "debug")
         cbas.log("parser ...", "debug")
         cbas.log("============================================", "debug")
-        self.parser.config = self.config.getParserConfig()
-        return self.parser.parse(tokenList)
+        self.__parser.config = self.__config.getParserConfig()
+        return self.__parser.parse(tokenList)
 
     def __runAstOptimizer(self, ast, compilerPass):
 
         cbas.log("ast optimizer ...".format(), "debug")
-        conf = self.config.getAstOptimizerConfig(compilerPass)
+        conf = self.__config.getAstOptimizerConfig(compilerPass)
         for o in conf.handlers:
             #print( TraverseMode.toString(o[1]), o[0])
             if o[1] == TraverseMode.TOP_DOWN:
@@ -104,11 +106,12 @@ class Compiler():
 
     def __runCodeBuilder(self,ast):
         cbas.log("CodeBuilder ...".format(), "debug")
-        self.resetAst(ast)
-        return self.codeBuilder.main(ast)
+        self.__resetAst(ast)
+        return self.__codeBuilder.main(ast)
 
     def __runLinker(self,lines):
-        return self.linker.main(lines)
+        return self.__linker.main(lines)
+
 
     def __debugAst(self, ast):
 
@@ -117,12 +120,6 @@ class Compiler():
         cbas.log("============================================", "debug")
         ast.debug()
 
-    def _toBasic(self):
-        self.basicLines = []
-        #ast = self.ast
-        #ast.topDown(self.__callBackBasic)
-        return self.basicLines
-    
     def __callBackBasic(self,node,traverseMode):
         if node.isLeaf:
             return
@@ -131,7 +128,7 @@ class Compiler():
             for l in lines:
                 self.basicLines.append(l)
 
-    def writeLines(self, lines, file):
+    def __writeLines(self, lines, file):
         try:
             os.remove(file)
         except FileNotFoundError as e:
@@ -145,10 +142,10 @@ class Compiler():
                 #b1 = struct.pack("{}b".format(len(line)), *line)
                 f.write(b1)
 
-    def resetAst(self,ast):
-        ast.topDown(self.astResetHandler)
+    def __resetAst(self,ast):
+        ast.topDown(self.__astResetHandler)
 
-    def astResetHandler(self, node, traverseMode):
+    def __astResetHandler(self, node, traverseMode):
         node._basicGenerated = False
 
     ##
@@ -162,12 +159,12 @@ class Compiler():
         cbas.log("", "debug")
         cbas.log("lexer ...", "debug")
         cbas.log("============================================", "debug")
-        self.lexer.config = self.config.getLexerConfig()
-        self.lexer.tokenizeLine(expression)
+        self.__lexer.config = self.__config.getLexerConfig()
+        self.__lexer.tokenizeLine(expression)
         
-        self.__runTokenChainOptimizer(self.lexer.firstToken)
+        self.__runTokenChainOptimizer(self.__lexer.firstToken)
 
-        tokenList = self.lexer.getTokenList()
+        tokenList = self.__lexer.getTokenList()
 
         ast = self.__runParser(tokenList)
 
@@ -186,17 +183,37 @@ class Compiler():
     #
     def compileFile(self, inputFile ):
 
+        #
+        # Generalize files
+        #
+        # 1. : is replaced by a linebreak
+        # 2. _ at the end of a line, contatenates the current and the next line.
+        # 3. Comments are removed.
+        
+
+        #
+        # LEXER
+        #
         self.__runLexer(inputFile)
 
-        self.__runTokenChainOptimizer(self.lexer.firstToken)
+        #
+        # TokenchainOptimizer
+        #
+        self.__runTokenChainOptimizer(self.__lexer.firstToken)
 
-        tokenList = self.lexer.getTokenList()
+        tokenList = self.__lexer.getTokenList()
 
+        #
+        # PARSER
+        #
         ast = self.__runParser(tokenList)
    
         # DEBUG
         self.__debugAst(ast)
 
+        #
+        # ASTOPTIMIZER
+        #
         # SemanticCheck
         ast = self.__runAstOptimizer(ast,CompilerPasses.CHECK_SEMANTIC)
 
@@ -206,13 +223,14 @@ class Compiler():
         # DEBUG
         self.__debugAst(ast)
 
+
         #
         # CODEBUILDER
         #
         codeLines = None
         if True:
-            self.codeBuilder = self._createBasicBuilder(BasicBuilder.PRG)
-            self.linker=self._createLinker(True)
+            self.__codeBuilder = self._createBasicBuilder(BasicBuilder.PRG)
+            self.__linker=self._createLinker(True)
             codeLines = self.__runCodeBuilder(ast)
             codeLines = self.__runLinker(codeLines)
 
@@ -221,8 +239,8 @@ class Compiler():
         #
         basicLines = None
         if True:
-            self.codeBuilder = self._createBasicBuilder(BasicBuilder.BASIC)
-            self.linker=self._createLinker(False)
+            self.__codeBuilder = self._createBasicBuilder(BasicBuilder.BASIC)
+            self.__linker=self._createLinker(False)
             basicLines = self.__runCodeBuilder(ast)
             basicLines = self.__runLinker(basicLines)
 
@@ -231,13 +249,13 @@ class Compiler():
         if basicLines is not None:
             if os.path.isdir( self.objectFolder ):
                 basicFile = os.path.join( self.binFolder, os.path.basename(inputFile) )+".basic"
-                self.writeLines(basicLines, basicFile)
+                self.__writeLines(basicLines, basicFile)
 
 
         if codeLines is not None:
             if os.path.isdir( self.binFolder ):
                 basicFile = os.path.join( self.binFolder, os.path.basename(inputFile)+".prg" )
-                self.writeLines(codeLines, basicFile)
+                self.__writeLines(codeLines, basicFile)
 
 
         cbas.symbolTable.debug()

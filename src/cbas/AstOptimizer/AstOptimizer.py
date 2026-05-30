@@ -143,7 +143,6 @@ class ArithmeticOptimizer(AstOptimizer):
         elif op == "-": r = lv-rv
         elif op == "*": r = lv*rv
         elif op == "/": r = lv/rv
-        else:return node
 
         replacement = PrimaryExpression("float",r, ChainToken(str(r),0,0,TokenTypes.FLOAT ) )
 
@@ -241,7 +240,7 @@ class SyntaxCheckerV2(AstOptimizer):
                         
     def __checkStsParameterQantity(self,node):
         
-        if type(node) == cbas.Ast.Expressions.StatementExpression:
+        if type(node) == cbas.Ast.Statements.StatementStatement:
             token = node.statement.token
             qty = len(node.parameters)
             if token.type in[ TokenTypes.CLR, TokenTypes.NEW, TokenTypes.RESTORE, TokenTypes.RETURN, TokenTypes.ST, TokenTypes.STATUS, TokenTypes.STOP, TokenTypes.TI, TokenTypes.TI_DOLLAR, TokenTypes.TIME, TokenTypes.TIME_DOLLAR, TokenTypes.PISIGN, TokenTypes.END, TokenTypes.CONT ]:

@@ -82,6 +82,7 @@ class Linker():
                 for k,v in labels.items():
                     line = line.replace(k,bytearray(str(v),encoding="ascii"))
 
+
             if line is not None:
                 l = bytearray()
 
@@ -109,18 +110,19 @@ class Linker():
 
                 result.append(l)
             
-            #
-            # Set Address of next line
-            #
-            if self.prg:
-                self.currentAddress += len(l)
-                l[0] = self.currentAddress&255
-                l[1] = (self.currentAddress>>8)&255
+                #
+                # Set Address of next line
+                #
+                if self.prg:
+                    self.currentAddress += len(l)
+                    l[0] = self.currentAddress&255
+                    l[1] = (self.currentAddress>>8)&255
             
+                # EOF
+                if self.prg:
+                    l += bytes([0,0])
+
             self.lineNumber += self.lineNumberStep
 
-        # EOF
-        if self.prg:
-            l += bytes([0,0])
 
         return result

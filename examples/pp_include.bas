@@ -1,7 +1,8 @@
 #define A 4
-#config keepindentation true
+#pragma keepindentation true
 >>>>>>>>>>>>>>>>> pp_include.bas
-A
+A or B
+a||B
     #include test.pp
 A
 <<<<<<<<<<<<<<<<< pp_include.bas

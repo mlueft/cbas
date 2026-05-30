@@ -18,7 +18,48 @@ LinkedList = cbas.DataStructures.LinkedList.LinkedList
 TreeNode = cbas.DataStructures.TreeNode.TreeNode
 
 class ExpressionParser():
-    
+
+    ##
+    #
+    #    
+    @staticmethod
+    def parseExpression(parser, bp):
+        cbas.log("start:parseExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
+
+
+        # parse nud
+        tokenType   = parser.currentTokenType
+
+        if tokenType not in Lookups.nud:
+            raise ValueError("Nud handler expected for token type ({})".format(TokenTypes.toString(tokenType)) )
+        
+        nudFunction = Lookups.nud[tokenType]
+
+        left = nudFunction(parser)
+         
+        # This is for linenumber/labels/eof
+        if parser.currentTokenType not in Lookups.bp:
+            cbas.log("end:parseExpression ... ", "debug" )
+            return left
+
+        while  Lookups.bp[parser.currentTokenType] > bp:
+            tokenType = parser.currentTokenType
+            
+            if tokenType not in Lookups.led:
+                raise ValueError("Led handler expected for token type ({})".format(TokenTypes.toString(tokenType)) )
+            
+            ledFunction = Lookups.led[tokenType]
+            left = ledFunction(parser,left,Lookups.bp[parser.currentTokenType])
+
+            # This is for linenumber/labels/eof
+            if parser.currentTokenType not in Lookups.bp:
+                cbas.log("end:parseExpression ... ", "debug" )
+                return left
+            
+        cbas.log("end:parseExpression ... ", "debug" )
+        return left
+
+
     ## 4
     #  "BLA"
     #  4.1
@@ -142,45 +183,6 @@ class ExpressionParser():
         else:
             raise ValueError( "Can't generate primary expression for {}!".format(TokenTypes.toString(type)) )
     
-    ##
-    #
-    #    
-    @staticmethod
-    def parseExpression(parser, bp):
-        cbas.log("start:parseExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
-
-
-        # parse nud
-        tokenType   = parser.currentTokenType
-
-        if tokenType not in Lookups.nud:
-            raise ValueError("Nud handler expected for token type ({})".format(TokenTypes.toString(tokenType)) )
-        
-        nudFunction = Lookups.nud[tokenType]
-
-        left = nudFunction(parser)
-         
-        # This is for linenumber/labels/eof
-        if parser.currentTokenType not in Lookups.bp:
-            cbas.log("end:parseExpression ... ", "debug" )
-            return left
-
-        while  Lookups.bp[parser.currentTokenType] > bp:
-            tokenType = parser.currentTokenType
-            
-            if tokenType not in Lookups.led:
-                raise ValueError("Led handler expected for token type ({})".format(TokenTypes.toString(tokenType)) )
-            
-            ledFunction = Lookups.led[tokenType]
-            left = ledFunction(parser,left,Lookups.bp[parser.currentTokenType])
-
-            # This is for linenumber/labels/eof
-            if parser.currentTokenType not in Lookups.bp:
-                cbas.log("end:parseExpression ... ", "debug" )
-                return left
-            
-        cbas.log("end:parseExpression ... ", "debug" )
-        return left
 
     ##
     #
@@ -237,12 +239,16 @@ class ExpressionParser():
     def parseGroupingExpression(parser):
         cbas.log("start:parseGroupingExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
 
-        start = parser.advance()
+        # We skip (
+        parser.expect(TokenTypes.ROUNDOPEN)
+
         expression = ExpressionParser.parseExpression(parser,BindingPower.DEFAULT)
 
         result = GroupingExpression(
             expression
         )
+
+        # We skip )
         parser.expect( TokenTypes.ROUNDCLOSE )
 
         cbas.log("end:parseGroupingExpression", "debug" )
@@ -254,15 +260,21 @@ class ExpressionParser():
     @staticmethod
     def parseAssignmentExpression(parser, left, bp):
         cbas.log("start:parseAssignmentExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
+        
         # We skip the "="
-        parser.advance()
+        parser.expect(TokenTypes.ASSIGNMENT)
+
         right = ExpressionParser.parseExpression(parser,bp)
         result = AssignmentExpression(left, right)
+
         cbas.log("end:parseAssignmentExpression", "debug" )
         return result
 
     ##
-    #
+    #  ABS()
+    #  ASC()
+    #  SYS()
+    #  ...
     #
     @staticmethod
     def parseProcedureCallExpression(parser, left,bp):
@@ -271,8 +283,8 @@ class ExpressionParser():
         functionName = left #ExpressionParser.parseExpression(parser,BindingPower.DEFAULT) #parser.advance()
         parameters = []
 
-        # we skip the "("
-        parser.advance()
+        # we skip the (
+        parser.expect(TokenTypes.ROUNDOPEN)
 
         # we collect all parameters
         ct = parser.currentTokenType
@@ -281,72 +293,19 @@ class ExpressionParser():
             parameters.append( expr )
             
             # We skip the parameter seperator
-            if parser.currentTokenType == TokenTypes.COMMA:
-                parser.advance()
+            parser.advance(TokenTypes.COMMA)
 
             ct = parser.currentTokenType
 
-        # we skip ")"
-        parser.advance()
+        # we skip )
+        parser.expect(TokenTypes.ROUNDCLOSE)
 
-        result = CallExpression(functionName,parameters)
+        result = ProcesureCallExpression(functionName,parameters)
         cbas.log("end:parseProcedureCallExpression", "debug" )
         return result
 
-    ##
-    #
-    #
-    @staticmethod
-    def parseStatementExpression(parser):
-        cbas.log("start:parseStatementExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
-        statement = ExpressionParser.parsePrimaryExpression(parser)
-        #right = ExpressionParser.parseExpression(parser,BindingPower.DEFAULT)
-        parameters = []
 
-        while parser.currentTokenType not in [TokenTypes.LINEEND,TokenTypes.COLON,TokenTypes.EOF, TokenTypes.LINENUMBER]:
-            if parser.currentTokenType == TokenTypes.COMMA:
-                t=PrimaryExpression( "None", None, None )
-                parameters.append(t)
-                #parser.advance()
-            else:
-                right = ExpressionParser.parseExpression(parser,BindingPower.DEFAULT)
-                parameters.append(right)
-            
-            if parser.currentTokenType == TokenTypes.COMMA:
-                parser.advance()
-        
-        if parser.lastTokenType == TokenTypes.COMMA:
-            t=PrimaryExpression( "None", None, None )
-            parameters.append(t)
-            parser.advance()
 
-        result = StatementExpression(statement,parameters)
-        cbas.log("end:parseStatementExpression", "debug" )
-        return result
-
-    ##
-    #
-    #
-    @staticmethod
-    def parseListStatement(parser):
-        cbas.log("start:parseListStatement ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
-        statement = ExpressionParser.parsePrimaryExpression(parser)
-        #right = ExpressionParser.parseExpression(parser,BindingPower.DEFAULT)
-        parameters = []
-
-        if parser.currentTokenType not in [TokenTypes.LINEEND,TokenTypes.COLON,TokenTypes.EOF, TokenTypes.LINENUMBER]:
-            right = ExpressionParser.parsePrimaryExpression(parser)
-            parameters.append(right)
-            
-            if parser.currentTokenType == TokenTypes.MINUS:
-                # We skip the "-"
-                parser.advance()
-
-                right = ExpressionParser.parsePrimaryExpression(parser)
-                parameters.append(right)
-        result = StatementExpression(statement,parameters)
-        cbas.log("end:parseListStatement", "debug" )
-        return result
 
     ##
     #
@@ -355,71 +314,24 @@ class ExpressionParser():
     def parseFNExpression(parser):
         cbas.log("start:parseFNExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
         parameters = []
+
         # we skip "FN"
-        parser.advance()
+        parser.expect(TokenTypes.FN)
+
         functionName = ExpressionParser.parsePrimaryExpression(parser)
+        
         parser.expect(TokenTypes.ROUNDOPEN)
+        
         parameters.append( ExpressionParser.parsePrimaryExpression(parser))
+        
         parser.expect(TokenTypes.ROUNDCLOSE)
         
         result = FunctionCallExpression(functionName,parameters)
         cbas.log("end:parseFNExpression", "debug" )
         return result
 
-    ##
-    #
-    #
-    @staticmethod
-    def parseCMDExpression(parser):
-        cbas.log("start:parseCMDExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
-        statement = ExpressionParser.parsePrimaryExpression(parser)
-        #right = ExpressionParser.parseExpression(parser,BindingPower.DEFAULT)
-        parameters = []
-        while parser.currentTokenType not in [TokenTypes.LINEEND,TokenTypes.COLON,TokenTypes.EOF, TokenTypes.LINENUMBER]:
-            right = ExpressionParser.parseExpression(parser,BindingPower.DEFAULT)
-            parameters.append(right)
-            
-            if parser.currentTokenType in[TokenTypes.COMMA,TokenTypes.SEMICOLON]:
-                parser.advance()
-        result =  StatementExpression(statement,parameters)
-        cbas.log("end:parseCMDExpression", "debug" )
-        return result
 
-    ##
-    #
-    #
-    @staticmethod
-    def parseDEFExpression(parser):
-        cbas.log("start:parseDEFExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
-        # we skip "def"
-        parser.advance()
-        # we skip "fn"
-        parser.advance()
-        functionName = ExpressionParser.parsePrimaryExpression(parser)
 
-        # we skip "("
-        parser.advance()
-        parameters = []
-        while parser.currentTokenType not in [TokenTypes.LINEEND,TokenTypes.ROUNDCLOSE,TokenTypes.EOF, TokenTypes.LINENUMBER]:
-            right = ExpressionParser.parsePrimaryExpression(parser)
-            parameters.append(right)
-            
-            if parser.currentTokenType in[TokenTypes.COMMA]:
-                parser.advance()
-        # we skip ")"
-        parser.advance()
-        # we skip "="
-        parser.advance()
-        body = ExpressionParser.parseExpression(parser, BindingPower.DEFAULT)
-
-        # Update Symboltable
-        symbol = cbas.symbolTable.getSymbol(functionName.value)
-        symbol.type = "function"
-        symbol.parameters = len(parameters)
-
-        result = FunctionDefinitionExpression(functionName,parameters,body)
-        cbas.log("end:parseDEFExpression", "debug" )
-        return result
 
     ##
     #
@@ -427,8 +339,9 @@ class ExpressionParser():
     @staticmethod
     def parseONExpression(parser):
         cbas.log("start:parseONExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
+        
         # We skip "on"
-        parser.advance()
+        parser.expect(TokenTypes.ON)
 
         index = ExpressionParser.parseExpression(parser, BindingPower.DEFAULT)
 
@@ -443,175 +356,19 @@ class ExpressionParser():
             right = ExpressionParser.parseExpression(parser, BindingPower.DEFAULT)
             lineNumbers.append(right)
             
-            if parser.currentTokenType in[TokenTypes.COMMA]:
-                parser.advance()
+            # we skip ,
+            parser.advance(TokenTypes.COMMA)
+
         result = OnExpression(index,jumpMethode,lineNumbers)
         cbas.log("end:parseGroupingExpression", "debug" )
         return result
     
-    ##
-    #
-    #
-    @staticmethod
-    def parseINPUTExpression(parser):
-        cbas.log("start:parseINPUTExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
-        statement = ExpressionParser.parsePrimaryExpression(parser)
-
-        parameters = []
-        while parser.currentTokenType not in [TokenTypes.LINEEND,TokenTypes.COLON,TokenTypes.EOF, TokenTypes.LINENUMBER]:
-            right = ExpressionParser.parseExpression(parser,BindingPower.DEFAULT)
-            parameters.append(right)
-            
-            # For input we collect the seperator too.
-            if parser.currentTokenType in [TokenTypes.COMMA, TokenTypes.SEMICOLON]:
-                seperator = ExpressionParser.parsePrimaryExpression(parser)
-                parameters.append(seperator)
-
-        cbas.log("end:parseINPUTExpression", "debug" )
-        result = InputExpression(statement,parameters)
-        return result
-
-    ##
-    #
-    #
-    @staticmethod
-    def parseDIMExpression(parser):
-        cbas.log("start:parseDIMExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
-        # We skip "dim"
-        parser.advance()
-
-        variable = ExpressionParser.parsePrimaryExpression(parser)
-        
-        # We skip "("
-        parser.advance()
-
-        parameters = []
-        while parser.currentTokenType not in [TokenTypes.LINEEND,TokenTypes.ROUNDCLOSE,TokenTypes.EOF, TokenTypes.LINENUMBER]:
-            right = ExpressionParser.parseExpression(parser,BindingPower.DEFAULT)
-            parameters.append(right)
-            
-            if parser.currentTokenType in[TokenTypes.COMMA]:
-                parser.advance()
-
-        # We skip ")"
-        parser.advance()
-
-        assignment = None
-        # There yould be an assignment
-        if parser.currentTokenType in [TokenTypes.ASSIGNMENT]:
-            # We skip thee "="
-            parser.advance()
-
-            assignment = ExpressionParser.parseExpression(parser, BindingPower.DEFAULT)
-        result = DimExpression(variable,parameters, assignment)
-        cbas.log("end:parseDIMExpression", "debug" )
-        return result
-
-    ##
-    #
-    #
-    @staticmethod
-    def parsePRINTExpression(parser):
-        cbas.log("start:parsePRINTExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
-        statement = ExpressionParser.parsePrimaryExpression(parser)
-        #right = ExpressionParser.parseExpression(parser,BindingPower.DEFAULT)
-        
-        parameters = []
-        while parser.currentTokenType not in [TokenTypes.LINEEND,TokenTypes.COLON,TokenTypes.EOF, TokenTypes.LINENUMBER]:
-            right = ExpressionParser.parseExpression(parser,BindingPower.DEFAULT)
-            parameters.append(right)
-            
-            # For print we collect the seperator too.
-            if parser.currentTokenType in [TokenTypes.COMMA, TokenTypes.SEMICOLON]:
-                seperator = ExpressionParser.parsePrimaryExpression(parser)
-                parameters.append(seperator)
-
-        result = PrintExpression(statement,parameters)
-        cbas.log("end:parsePRINTExpression", "debug" )
-        return result
-    
-    ##
-    #
-    #
-    @staticmethod
-    def parseIFExpression(parser):
-        cbas.log("start:parseIFExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
-        # We skip "if"
-        parser.advance()
-
-        condition = ExpressionParser.parseExpression(parser,BindingPower.DEFAULT)
-
-        # We skip "then"
-        if parser.currentTokenType in [TokenTypes.THEN]:
-            parser.advance()
-
-        code = []
-        while parser.currentTokenType not in [TokenTypes.LINEEND,TokenTypes.EOF, TokenTypes.LINENUMBER]:
-            
-            right = ExpressionParser.parseExpression(parser,BindingPower.DEFAULT)
-            code.append(right)
-            
-            # We skip ":"
-            if parser.currentTokenType in [TokenTypes.COLON]:
-                parser.advance()
-        result = IfExpression(condition, code)
-        cbas.log("end:parseIFExpression", "debug" )
-        return result
-    
-    ##
-    #
-    #
-    @staticmethod
-    def parseFORExpression(parser):
-        cbas.log("start:parseFORExpression ... {} @ {}".format(parser.currentToken.code, parser.pos), "debug" )
-        # We skip "for"
-        parser.advance()
-
-        runner = ExpressionParser.parsePrimaryExpression(parser)
-
-        # We skip "="
-        parser.advance()
-
-        start = ExpressionParser.parseExpression(parser,BindingPower.DEFAULT)
-
-        # We skip "TO"
-        parser.advance()
-
-        end = ExpressionParser.parseExpression(parser,BindingPower.DEFAULT)
-
-        step = None
-        if parser.currentTokenType in [TokenTypes.STEP]:
-            # We skip "step"
-            parser.advance()
-            step = ExpressionParser.parseExpression(parser,BindingPower.DEFAULT)
-
-        loopCode = []
-        while parser.currentTokenType not in [TokenTypes.NEXT,TokenTypes.EOF, TokenTypes.LINENUMBER]:
-            
-            right = ExpressionParser.parseExpression(parser,BindingPower.DEFAULT)
-            loopCode.append(right)
-            
-            # We skip ":"
-            if parser.currentTokenType in [TokenTypes.COLON]:
-                parser.advance()
-
-        # 
-        result = ForExpression(runner,start,end,step, loopCode)
-        cbas.log("end:parseFORExpression", "debug" )
-        return result
 
 
-    ##
-    #
-    #
-    @staticmethod
-    def parseLabelExpression(parser):
-        result = ExpressionParser.parsePrimaryExpression(parser)
-        id = cbas.labelTable.addLabel(result.code)
-        result.value = id
-        return result
-        
+  
 
+
+  
 
 
 
@@ -813,7 +570,7 @@ class AssignmentExpression(Expression):
 ##
 #
 #
-class CallExpression(Expression):
+class ProcesureCallExpression(Expression):
 
     def __init__(self, function, parameters):
         super().__init__()
@@ -849,43 +606,6 @@ class CallExpression(Expression):
         return result
     
 
-##
-#
-#
-class StatementExpression(Expression):
-
-    def __init__(self, statement, parameters):
-        super().__init__()
-        self.statement = statement
-        self.parameters = parameters
-
-        self.statement.onReplace.add(self._hndReplaceFunction)
-
-        for s in self.parameters:
-            s.onReplace.add(self._hndReplaceParameter)
-
-    def _hndReplaceFunction(self,ev):
-        #print("GroupingExpression::_hndReplaceFunction")
-        self.statement.onReplace.remove(self._hndReplaceFunction)
-        self.statement = ev.replacement
-        self.statement.onReplace.add(self._hndReplaceFunction)
-
-    def _hndReplaceParameter(self,ev):
-        #print("BlockStatement::_hndReplaceLeft")
-        for i,v in enumerate(self.parameters):
-            if ev.eventSource == v:
-                self.parameters[i].onReplace.remove(self._hndReplaceParameter)
-                self.parameters[i] = ev.replacement
-                self.parameters[i].onReplace.add(self._hndReplaceParameter)
-                return
-            
-    def _getNodes(self):
-        result = []
-        result.append(self.statement) 
-        for p in self.parameters:
-            result.append(p)
-        return result
-    
 
 ##
 #
@@ -924,52 +644,7 @@ class FunctionCallExpression(Expression):
             result.append(p)
         return result
     
-##
-#
-#
-class FunctionDefinitionExpression(Expression):
 
-    def __init__(self, functionName, parameters, body):
-        super().__init__()
-        self.functionName = functionName
-        self.parameters = parameters
-        self.body = body
-
-        self.functionName.onReplace.add(self._hndReplaceFunction)
-        self.body.onReplace.add(self._hndReplaceBody)
-
-        for s in self.parameters:
-            s.onReplace.add(self._hndReplaceParameter)
-
-    def _hndReplaceFunction(self,ev):
-        #print("GroupingExpression::_hndReplaceFunction")
-        self.functionName.onReplace.remove(self._hndReplaceFunction)
-        self.functionName = ev.replacement
-        self.functionName.onReplace.add(self._hndReplaceFunction)
-
-    def _hndReplaceBody(self,ev):
-        #print("GroupingExpression::_hndReplaceFunction")
-        self.body.onReplace.remove(self._hndReplaceBody)
-        self.body = ev.replacement
-        self.body.onReplace.add(self._hndReplaceBody)
-
-    def _hndReplaceParameter(self,ev):
-        #print("BlockStatement::_hndReplaceLeft")
-        for i,v in enumerate(self.parameters):
-            if ev.eventSource == v:
-                self.parameters[i].onReplace.remove(self._hndReplaceParameter)
-                self.parameters[i] = ev.replacement
-                self.parameters[i].onReplace.add(self._hndReplaceParameter)
-                return
-            
-    def _getNodes(self):
-        result = []
-        result.append(self.functionName) 
-        for p in self.parameters:
-            result.append(p)
-        result.append(self.body)
-        return result
-    
 
 ##
 #
@@ -1017,238 +692,8 @@ class OnExpression(Expression):
             result.append(p)
         return result
     
-##
-#
-#
-class DimExpression(Expression):
 
-    def __init__(self, variable, dimensions, assignment=None):
-        super().__init__()
-        self.variable = variable
-        self.dimensions = dimensions
-        self.assignment = None
-        
-        self.variable.onReplace.add(self._hndReplaceVariable)
+ 
 
-        if assignment is not None:
-            self.assignment = assignment
-            self.assignment.onReplace.add(self._hndReplaceAssignment)
-
-
-        for s in self.dimensions:
-            s.onReplace.add(self._hndReplaceDimension)
-
-    def _hndReplaceVariable(self,ev):
-        #print("GroupingExpression::_hndReplaceFunction")
-        self.variable.onReplace.remove(self._hndReplaceVariable)
-        self.variable = ev.replacement
-        self.variable.onReplace.add(self._hndReplaceVariable)
-
-    def _hndReplaceAssignment(self,ev):
-        #print("GroupingExpression::_hndReplaceFunction")
-        self.assignment.onReplace.remove(self._hndReplaceAssignment)
-        self.assignment = ev.replacement
-        self.assignment.onReplace.add(self._hndReplaceAssignment)
-
-    def _hndReplaceDimension(self,ev):
-        #print("BlockStatement::_hndReplaceLeft")
-        for i,v in enumerate(self.dimensions):
-            if ev.eventSource == v:
-                self.dimensions[i].onReplace.remove(self._hndReplaceDimension)
-                self.dimensions[i] = ev.replacement
-                self.dimensions[i].onReplace.add(self._hndReplaceDimension)
-                return
-            
-    def _getNodes(self):
-        result = []
-        result.append(self.variable)
-        for p in self.dimensions:
-            result.append(p)
-        if self.assignment is not None:
-            result.append(self.assignment)
-        return result
-    
-##
-#
-#
-class IfExpression(Expression):
-
-    def __init__(self, condition, code):
-        super().__init__()
-        self.condition = condition
-        self.trueCode = code
-        
-        self.condition.onReplace.add(self._hndReplaceCondition)
-        for s in self.trueCode:
-            s.onReplace.add(self._hndReplaceCode)
-
-
-    def _hndReplaceCondition(self,ev):
-        #print("GroupingExpression::_hndReplaceFunction")
-        self.condition.onReplace.remove(self._hndReplaceCondition)
-        self.condition = ev.replacement
-        self.condition.onReplace.add(self._hndReplaceCondition)
-
-    def _hndReplaceCode(self,ev):
-        #print("BlockStatement::_hndReplaceLeft")
-        for i,v in enumerate(self.trueCode):
-            if ev.eventSource == v:
-                self.trueCode[i].onReplace.remove(self._hndReplaceCode)
-                self.trueCode[i] = ev.replacement
-                self.trueCode[i].onReplace.add(self._hndReplaceCode)
-                return
-            
-    def _getNodes(self):
-        result = []
-        result.append(self.condition)
-        for p in self.trueCode:
-            result.append(p)
-        return result
-    
-##
-#
-#
-class ForExpression(Expression):
-
-    def __init__(self, runner, start, end, step=None, loopCode=None):
-        super().__init__()
-        
-        self.runner = runner
-        self.start = start
-        self.end = end
-        self.step = step
-        self.loopCode = loopCode
-        
-        self.runner.onReplace.add(self._hndReplaceRunner)
-        self.start.onReplace.add(self._hndReplaceStart)
-        self.end.onReplace.add(self._hndReplaceEnd)
-        if self.step is not None:
-            self.step.onReplace.add(self._hndReplaceStep)
-
-        if self.loopCode is not None:
-            for s in self.loopCode:
-                s.onReplace.add(self._hndReplaceLoopCode)            
-
-    def _hndReplaceRunner(self,ev):
-        #print("GroupingExpression::_hndReplaceFunction")
-        self.runner.onReplace.remove(self._hndReplaceRunner)
-        self.runner = ev.replacement
-        self.runner.onReplace.add(self._hndReplaceRunner)
-
-    def _hndReplaceStart(self,ev):
-        #print("GroupingExpression::_hndReplaceFunction")
-        self.start.onReplace.remove(self._hndReplaceStart)
-        self.start = ev.replacement
-        self.start.onReplace.add(self._hndReplaceStart)
-
-    def _hndReplaceEnd(self,ev):
-        #print("GroupingExpression::_hndReplaceFunction")
-        self.end.onReplace.remove(self._hndReplaceEnd)
-        self.end = ev.replacement
-        self.end.onReplace.add(self._hndReplaceEnd)
-
-    def _hndReplaceStep(self,ev):
-        #print("GroupingExpression::_hndReplaceFunction")
-        self.step.onReplace.remove(self._hndReplaceStep)
-        self.step = ev.replacement
-        self.step.onReplace.add(self._hndReplaceStep)
-
-    def _hndReplaceLoopCode(self,ev):
-        #print("BlockStatement::_hndReplaceLeft")
-        for i,v in enumerate(self.loopCode):
-            if ev.eventSource == v:
-                self.loopCode[i].onReplace.remove(self._hndReplaceLoopCode)
-                self.loopCode[i] = ev.replacement
-                self.loopCode[i].onReplace.add(self._hndReplaceLoopCode)
-                return
-            
-    def _getNodes(self):
-
-        result = []
-        result.append(self.runner)
-        result.append(self.start)
-        result.append(self.end)
-        if self.step is not None:
-            result.append(self.step)
-        if self.loopCode is not None:
-            for p in self.loopCode:
-                result.append(p)            
-        return result
-    
-
-##
-#
-#
-class PrintExpression(Expression):
-
-    def __init__(self, statement, parameters):
-        super().__init__()
-        self.statement = statement
-        self.parameters = parameters
-
-        self.statement.onReplace.add(self._hndReplaceFunction)
-
-        for s in self.parameters:
-            s.onReplace.add(self._hndReplaceParameter)
-
-    def _hndReplaceFunction(self,ev):
-        #print("GroupingExpression::_hndReplaceFunction")
-        self.statement.onReplace.remove(self._hndReplaceFunction)
-        self.statement = ev.replacement
-        self.statement.onReplace.add(self._hndReplaceFunction)
-
-    def _hndReplaceParameter(self,ev):
-        #print("BlockStatement::_hndReplaceLeft")
-        for i,v in enumerate(self.parameters):
-            if ev.eventSource == v:
-                self.parameters[i].onReplace.remove(self._hndReplaceParameter)
-                self.parameters[i] = ev.replacement
-                self.parameters[i].onReplace.add(self._hndReplaceParameter)
-                return
-            
-    def _getNodes(self):
-        result = []
-        result.append(self.statement) 
-        for p in self.parameters:
-            result.append(p)
-        return result
-    
-##
-#
-#
-class InputExpression(Expression):
-
-    def __init__(self, statement, parameters):
-        super().__init__()
-        self.statement = statement
-        self.parameters = parameters
-
-        self.statement.onReplace.add(self._hndReplaceFunction)
-
-        for s in self.parameters:
-            s.onReplace.add(self._hndReplaceParameter)
-
-    def _hndReplaceFunction(self,ev):
-        #print("GroupingExpression::_hndReplaceFunction")
-        self.statement.onReplace.remove(self._hndReplaceFunction)
-        self.statement = ev.replacement
-        self.statement.onReplace.add(self._hndReplaceFunction)
-
-    def _hndReplaceParameter(self,ev):
-        #print("BlockStatement::_hndReplaceLeft")
-        for i,v in enumerate(self.parameters):
-            if ev.eventSource == v:
-                self.parameters[i].onReplace.remove(self._hndReplaceParameter)
-                self.parameters[i] = ev.replacement
-                self.parameters[i].onReplace.add(self._hndReplaceParameter)
-                return
-            
-    def _getNodes(self):
-        result = []
-        result.append(self.statement) 
-        for p in self.parameters:
-            result.append(p)
-        return result
-    
 
 # cmd semicolon

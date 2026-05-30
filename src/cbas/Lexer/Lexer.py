@@ -86,6 +86,7 @@ class Lexer():
     def tokenizeLine(self,line):
         if self.config is None:
             raise ValueError("Lexer config not set!")
+        
         Tokenizer.tokenizeLine(self,line)
 
         if self.config.markEOF:
@@ -98,7 +99,7 @@ class Lexer():
     #
     #
     def appendToken(self,token):
-        if self.firstToken == None:
+        if self.firstToken is None:
             self.firstToken = token
             self.firstToken.onRemoved.add(self._handleFirstRemoved)
             self.firstToken.onInsertedBefore.add(self._handleFirstInsertedBefore)
@@ -112,13 +113,13 @@ class Lexer():
     ##
     #
     #
-    def getHandler(self,expression):
+    def getHandler(self,token):
         
         for h in self.config.tokens:
-            if expression.type ==h.type:
+            if token.type ==h.type:
                 return h.handler
 
-        raise ValueError("No handler defined for '{}'".format( TokenTypes.toString(expression.type)))
+        raise ValueError("No handler defined for '{}'".format( TokenTypes.toString(token.type)))
 
 
 
@@ -140,8 +141,8 @@ class Tokenizer():
     #
     #
     @staticmethod
-    def createToken(lexer,match,expression):
-        return ChainToken(match[0],lexer.line,lexer.pos,expression.type)
+    def createToken(lexer,match,token):
+        return ChainToken(match[0],lexer.line,lexer.pos,token.type)
 
 
     ##
@@ -160,7 +161,7 @@ class Tokenizer():
 
             cbas.log( "{}".format(line), "debug")
 
-            while True or lexer.pos < len(line):
+            while lexer.pos < len(line):
                 
                 #self.verbose("start scanning ...")
                 restart = True
@@ -181,7 +182,7 @@ class Tokenizer():
         # End of line reached
         lexer.mode = Lexer.MODE_ASSIGNMENT
         
-        if lexer.config.markLineend:
+        if True and lexer.config.markLineend:
             token = Tokenizer.createUniqueToken(lexer,TokenTypes.LINEEND, lexer.pos)
             lexer.appendToken(token)
 
@@ -192,18 +193,20 @@ class Tokenizer():
     #
     #
     @staticmethod
-    def testExpression(lexer,line,expression):
+    def testExpression(lexer,line,token):
   
         # TODO: We compile each expression each time. Some kind of cache would be nice.
-        pattern = re.compile(expression.expression)
+        pattern = re.compile(token.expression)
   
         match = pattern.match(line,lexer.pos)
         if match:
       
       
             posOld = lexer.pos
-            handler = lexer.getHandler(expression)
-            token = handler(lexer,match,expression)
+            handler = lexer.getHandler(token)
+            token = handler(lexer,match,token)
+
+            # ignoreHandler returns None
             if token is not None:
                 
                 if token.type in [ TokenTypes.ASSIGNMENT, TokenTypes.EQ]:
@@ -225,10 +228,9 @@ class Tokenizer():
 
                 lexer.appendToken(token)
                 cbas.log(((" "*posOld)+"'{}' - ({})").format(match[0],TokenTypes.toString(token.type)),"debug")
-            else:
-                pass #print("None")
             
             return True
+        
         return False
 
     ##

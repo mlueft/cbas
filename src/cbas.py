@@ -20,6 +20,7 @@ def showHelp():
     print( "-l    - Line number start[,step]. Default 1,1" )
     print( "-a    - Address of BasicProgram. Default 2049" )
     print( "-b    - Beautify Basic Code. Uses Space to format basic code.")
+    print( "-r    - Reuse variable names.")
     print( "" )
 
 def runCompiler( version, inputFile, outputFolder, objectFolder, lineNumberStart, lineNumberStep, basicStartAddress, beautify):
@@ -34,9 +35,11 @@ def runCompiler( version, inputFile, outputFolder, objectFolder, lineNumberStart
 
 def main():
 
-    cbas.debug = False
+    cbas.debug = True
     
-    inputFile    = "./obj/a"
+    inputFile    = "./obj/testapp.bas"
+    #inputFile    = "./obj/pp_include.bas"
+    #inputFile    = r"./obj/basic_V2.bas"
     objectFolder = "/home/work/cbas/obj"
     outputFolder = "/home/work/cbas/bin"
     
@@ -53,7 +56,7 @@ def main():
     # Check CLI-Parameter
     #
     args = sys.argv[1:]
-    options = "hbs:o:v:t:l:a:"
+    options = "hbs:o:v:t:l:a:r"
     long_options = []
 
     try:
@@ -84,6 +87,9 @@ def main():
             elif currentArg in ("-b"):
                 beautify = True
 
+            elif currentArg in ("-r"):
+                cbas.symbolTable.reuseVariables = True
+
             elif currentArg in ("-h"):
                 showHelp()
                 return
@@ -105,6 +111,7 @@ def main():
         print( "lineNumberStep    : {}".format( lineNumberStep ))
         print( "basicStartAddress : {}".format( basicStartAddress ))
         print( "beautify          : {}".format( beautify ))
+        print( "reuseVariables    : {}".format( cbas.symbolTable.reuseVariables ))
 
     #
     # Run Compiler
@@ -114,3 +121,10 @@ def main():
 
 
 main()
+
+try:
+    pass#main()
+except Exception as e:
+    print( "Something went wrong while processing your file ..." )
+    print( e )
+

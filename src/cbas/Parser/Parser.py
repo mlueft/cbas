@@ -68,10 +68,17 @@ class Parser():
 	def hasTokens(self):
 		return self.pos < len(self.tokens) and self.currentTokenType != TokenTypes.EOF #and self.currentTokenType != TokenTypes.LINEEND
 	
-	def advance(self):
+	def advance(self,conditionType = None):
+
 		tk = self.currentToken
-		#if self.pos < len(self.tokens)-1:
-		self.pos += 1
+
+		if conditionType is None:
+			self.pos += 1
+			return tk
+		
+		if tk.type == conditionType:
+			self.pos += 1
+
 		return tk
 	
 	def expect(self, tokenType):

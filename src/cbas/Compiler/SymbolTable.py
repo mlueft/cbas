@@ -8,6 +8,8 @@ class Symbol():
         self.parameters = 0
         self.declaration = None
         self.usages = []
+        self.variableName = None
+
     @property
     def hasParameters(self):
         if self.parameters is None:
@@ -27,7 +29,7 @@ class SymbolTable():
     def __init__(self):
         self.__symbols = {}
         self.reset()
-        self.usedVariableNames = {
+        self.usedVariableNames = [{
             "reserved0":"DO",
             "reserved1":"DS",
             "reserved2":"DS$",
@@ -42,7 +44,8 @@ class SymbolTable():
             "reserved11":"TO",
             "reserved12":"π"
 
-        }
+        }]
+        self.reuseVariables = False
 
     def debug(self):
         for k,s in self.__symbols.items():
@@ -66,7 +69,7 @@ class SymbolTable():
     #
     #
     def addSymbol(self, type, name, line = None, pos = None, value=None, params=None):
-
+        print("  addSymbol")
         id = self.getId(name)
         if id:
             symbol = self.__symbols[id]
@@ -86,17 +89,34 @@ class SymbolTable():
         SymbolTable.ID += 1
         return id
 
-    def freeVariable(self,variableName):
+    def openScope(self):
+        if self.reuseVariables:
+            self.usedVariableNames.append({})
+
+    def closeScope(self):
+        if self.reuseVariables:
+            self.usedVariableNames.pop()
+
+    def obsolet__freeVariable(self,variableName):
         for s in self.usedVariableNames:
             if self.usedVariableNames[s] == variableName:
                 del self.usedVariableNames[s]
                 return
     
     def getVariable(self,symbolName):
-        if symbolName in self.usedVariableNames:
-            return self.usedVariableNames[symbolName]
+
+       
+        #for i in range(len(self.usedVariableNames)-1,-1,-1):
+        #    usedVariableNames = self.usedVariableNames[i]
+        #    if symbolName in usedVariableNames:
+        #        return usedVariableNames[symbolName]
         
         symbol = self.__symbols[symbolName]
+
+        if symbol.variableName is not None:
+            return symbol.variableName
+
+        
         suffix = ""
         if symbol.type == "string":
             suffix = "$"
@@ -110,26 +130,16 @@ class SymbolTable():
                 candidate = v0+v1+suffix
 
                 found = False
-                for k in self.usedVariableNames:
-                    if self.usedVariableNames[k] == candidate:
-                        found = True
+                for i in range(len(self.usedVariableNames)-1,-1,-1):
+                    usedVariableNames = self.usedVariableNames[i]
+                    for k in usedVariableNames:
+                        if usedVariableNames[k] == candidate:
+                            found = True
 
                 if not found:
 
-                    self.usedVariableNames[symbolName] = candidate
+                    self.usedVariableNames[len(self.usedVariableNames)-1][symbolName] = candidate
+                    symbol.variableName = candidate
+                    print(" new: {}".format(candidate))
                     return candidate
         
-
-    ##
-    #
-    #
-    #def removeSymbol(self,id):
-    #    del self.__symbols[id]
-
-    ##
-    #
-    #
-    #def symbolExists(self, id):
-    #    return id in self.__symbols
-    
-    
