@@ -5,6 +5,7 @@ TraverseMode              = cbas.DataStructures.TraverseMode.TraverseMode
 ArithmeticOptimizer       = cbas.AstOptimizer.AstOptimizer.ArithmeticOptimizer
 SyntaxCheckerV2           = cbas.AstOptimizer.AstOptimizer.SyntaxCheckerV2
 LogicOptimizer            = cbas.AstOptimizer.AstOptimizer.LogicOptimizer
+StringOptimizer           = cbas.AstOptimizer.AstOptimizer.StringOptimizer
 
 class AstOptimizerMatrix():
 
@@ -70,7 +71,8 @@ class AstOptimizerMatrix():
 
     TokensPostParser = {
         "arithmetic"         : { "order":1, "instance": ArithmeticOptimizer(), "direction":TraverseMode.BOTTOM_UP },
-        "logical"            : { "order":2, "instance": LogicOptimizer(),      "direction":TraverseMode.BOTTOM_UP }
+        "logical"            : { "order":2, "instance": LogicOptimizer(),      "direction":TraverseMode.BOTTOM_UP },
+        "string"             : { "order":3, "instance": StringOptimizer(),     "direction":TraverseMode.BOTTOM_UP }
     }
 
     MatrixPostParser = {
@@ -79,5 +81,6 @@ class AstOptimizerMatrix():
         # ------------------------------------------------------------------
         "arithmetic":            [ 1,    1,    1,    1,    1,    1,    1,    1,    1    ],
         "logical":               [ 0,    1,    1,    1,    1,    1,    1,    1,    1    ],
+        "string":                [ 0,    1,    1,    1,    1,    1,    1,    1,    1    ],
 
     }

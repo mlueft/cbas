@@ -47,7 +47,7 @@ class StatementParser():
     #
     #
     @staticmethod
-    def parseScopeStatement(parser):
+    def parseBlockStatement(parser):
         cbas.log("start:parseBlockStatement()", "debug")
 
         # we skip {
@@ -63,7 +63,7 @@ class StatementParser():
         parser.expect( TokenTypes.CURLYCLOSE )
 
         cbas.log("end:parseBlockStatement()", "debug")
-        return BlockStatement(statements,True)
+        return BlockStatement(statements)
 
     ##
     #
@@ -77,46 +77,28 @@ class StatementParser():
 
         condition = ExpressionParser.parseExpression(parser,BindingPower.DEFAULT)
 
-        # We skip "then"
-        parser.advance(TokenTypes.THEN)
+        # We skip THEN,GOTO,GOSUB
+        parser.expectOne([TokenTypes.THEN,TokenTypes.GOTO,TokenTypes.GOSUB])
 
-        code = []
-        if parser.currentTokenType == TokenTypes.LINEEND:
+        if parser.currentTokenType == TokenTypes.CURLYOPEN:
             # we have a scope after THEN
 
-            # We skip lineend
-            parser.expect(TokenTypes.LINEEND)
-
-            # We skip "{"
-            parser.expect(TokenTypes.CURLYOPEN)
-
-            # We skip lineend
-            parser.expect(TokenTypes.LINEEND)
-
-            #right = ExpressionParser.parseExpression(parser,BindingPower.DEFAULT)
-            right = StatementParser.parseStatement(parser)
-            code.append(right)
-            
-            # We skip lineend
-            parser.expect(TokenTypes.LINEEND)
-
-            # We skip "}"
-            parser.expect(TokenTypes.CURLYCLOSE)
-
-            # We skip lineend
-            parser.expect(TokenTypes.LINEEND)
+            trueCode = StatementParser.parseBlockStatement(parser)
 
         else:
+            trueCode = []
             # We have a single command after THEN
             while parser.currentTokenType not in [TokenTypes.LINEEND,TokenTypes.EOF, TokenTypes.LINENUMBER]:
                 
                 right = ExpressionParser.parseExpression(parser,BindingPower.DEFAULT)
-                code.append(right)
+                trueCode.append(right)
                 
                 # We skip ":"
                 parser.advance(TokenTypes.COLON)
         
-        result = IfStatement(condition, code)
+            trueCode = BlockStatement(trueCode)
+
+        result = IfStatement(condition, trueCode)
         cbas.log("end:parseIFExpression", "debug" )
         return result
 
@@ -166,7 +148,6 @@ class StatementParser():
         cbas.log("end:parseCMDExpression", "debug" )
         return result
 
-
     ##
     #
     #
@@ -199,7 +180,7 @@ class StatementParser():
         #right = ExpressionParser.parseExpression(parser,BindingPower.DEFAULT)
         
         parameters = []
-        while parser.currentTokenType not in [TokenTypes.LINEEND,TokenTypes.COLON,TokenTypes.EOF, TokenTypes.LINENUMBER]:
+        while parser.currentTokenType not in [TokenTypes.LINEEND,TokenTypes.COLON,TokenTypes.EOF, TokenTypes.LINENUMBER,TokenTypes.CURLYCLOSE]:
             right = ExpressionParser.parseExpression(parser,BindingPower.DEFAULT)
             parameters.append(right)
             
@@ -403,9 +384,8 @@ class Statement(TreeNode):
 #
 class BlockStatement(Statement):
 
-    def __init__(self, statements, isScope = False):
+    def __init__(self, statements):
         super().__init__()
-        self.isScope = isScope
         self.statements = statements
         for s in self.statements:
             s.onReplace.add(self._hndReplaceLeft)
@@ -455,8 +435,7 @@ class IfStatement(Statement):
         self.trueCode = code
         
         self.condition.onReplace.add(self._hndReplaceCondition)
-        for s in self.trueCode:
-            s.onReplace.add(self._hndReplaceCode)
+        self.trueCode.onReplace.add(self._hndReplaceCode)
 
 
     def _hndReplaceCondition(self,ev):
@@ -477,8 +456,7 @@ class IfStatement(Statement):
     def _getNodes(self):
         result = []
         result.append(self.condition)
-        for p in self.trueCode:
-            result.append(p)
+        result.append(self.trueCode)
         return result
     
 

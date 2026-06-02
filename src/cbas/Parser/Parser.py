@@ -81,6 +81,27 @@ class Parser():
 
 		return tk
 	
+	def expectOne(self,tokenTypes, error = None):
+
+		token = self.currentToken
+		type = token.type
+
+		isOne = False
+		for t in tokenTypes:
+			if type == t:
+				isOne = True
+
+		if not isOne:
+			if error == None:
+				typeString = ""
+				for t in tokenTypes:
+					typeString += TokenTypes.toString(t) +", "
+				
+				raise ValueError("Expected {} but received {}!".format( typeString, TokenTypes.toString(type) ))
+			raise ValueError( error )
+		
+		return self.advance()
+	
 	def expect(self, tokenType):
 		return self.expectError( tokenType )
 	

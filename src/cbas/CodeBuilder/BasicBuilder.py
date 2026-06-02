@@ -141,12 +141,159 @@ class BasicBuilder():
         lines = handler(node)
 
         if lines is not None:
-            bla=0
             for l in lines:
-
-                #l = self.resolveSymbols(l)
                 self.codeLines.append(l+self.EOL)
 
+    ## Replaces symbols with their values
+    #
+    #
+    def __replaceSymbols(self, codeLines):
+        result = []
+        for line in codeLines:
+            result.append( self.resolveSymbols(line) )
+
+        return result
+    
+    ## Does some code cleaning.
+    #  * Removes { and }
+    #
+    def __cleanupCodeLines(self, codeLines):
+        #
+        # Codelines cleanup
+        # 
+        result = []
+        for line in codeLines:
+
+            # Seperate code parts and strings
+            # We have to break up the line into a list
+            # of code and string literals.
+            #
+            parts = []
+            pos = 0
+            partLine = bytearray()
+            while pos < len(line):
+                c = line[pos]
+                
+                if c == b'"'[0]:
+
+                    parts.append(partLine.rstrip(b"\n"))
+                    partLine = bytearray()
+
+                    # a string starts
+                    partLine += c.to_bytes(length=1, byteorder='big')
+
+                    # we read till the end of the string
+                    while pos < len(line)-1:
+                        pos += 1
+                        c = line[pos]
+                        if c != b'"'[0]:
+                            partLine += c.to_bytes(length=1, byteorder='big')
+                        else:
+                            # end of string reached
+                            partLine += c.to_bytes(length=1, byteorder='big')
+                            parts.append(partLine.rstrip(b"\n"))
+                            partLine = bytearray()
+
+                else:
+                    partLine += c.to_bytes(length=1, byteorder='big')
+
+                pos += 1
+
+            parts.append(partLine.rstrip(b"\n"))
+
+
+            #
+            # Remove empty parts
+            #
+            tmp1 = []
+            for p in parts:
+                if len(p)>0:
+                    tmp1.append(p)
+            parts=tmp1
+
+
+            #
+            # Remove SCOPE definitions
+            #
+            isScope=False
+            pattern = re.compile(b".*[\{\}].*")
+            i=0
+            while i < len(parts):
+                part=parts[i]
+                if part[0] != b'"'[0]:
+                    matches = pattern.findall(part)
+                    if matches:
+                        isScope=True
+
+                i+=1
+
+            if not isScope:
+                result.append(line)
+
+
+        return result
+    
+    ##
+    # Concatenate code lines.
+    #
+    # We have each statement in it's seperate line.
+    # We can concatenate some of them.
+    # Line length is limited to 80 chars.
+    # Labeldefinitions are going to be line numbers.
+    # For linenumbers are 5 chars reserved
+    #  Labeldefinition are "@label_nnnnn"
+    #  So we remove "@label_" to get the correct length
+    #  of the command after linker.
+    #
+    # * Lines between { and } can be concatenated
+    # * A Labeldefinition has to be in it's own line.
+    # 
+    # When do we need a new line?
+    # * After a next
+    # * after a goto/gosub
+    # * before "{"
+    # * before IF - not sure about this
+    # * after "}"
+    #
+    def __concatenateLines(self, codeLines):
+
+        _before = []
+
+        result = []
+
+        linenr = len(codeLines)-1
+        while  linenr > 0 :
+            line = codeLines[linenr].rstrip(b"\n")
+            prevLine  = codeLines[linenr-1].rstrip(b"\n")
+            if line is not None:
+                concat = True
+
+                if len(line)+len(prevLine) >= 80 - len(prevLine) + 1: concat = False 
+                if prevLine == b'}': concat = False
+                if line == b'}': concat = False
+                if prevLine == b'{': concat = False
+                if line == b'{': concat = False
+                if b'@' in line: concat = False
+                if b'@' in prevLine: concat = False
+
+
+                if concat:
+                    prevLine += self.tokenizer.tokenize(TokenTypes.COLON)
+                    prevLine += line
+                    codeLines[linenr-1] = prevLine+self.EOL
+                    codeLines[linenr] = None
+            linenr -= 1
+
+        #
+        # Remove wmpty Lines
+        #
+        tmp = []
+        for l in codeLines:
+            if l is not None:
+                tmp.append(l)
+
+        return tmp
+    
     def main(self, ast):
         self.codeLines = []
 
@@ -155,38 +302,26 @@ class BasicBuilder():
         #
         ast.topDown(self.astHandler)
 
-        #
-        # Replace symbols with variables
-        #
-        for i in range(0,len(self.codeLines)):
-            self.codeLines[i] = self.resolveSymbols(self.codeLines[i])
+        codeLines = self.__replaceSymbols(self.codeLines)
 
-        #
-        # Codelines cleanup
-        #
-        tmp = []
-        for line in self.codeLines:
+        codeLines = self.__concatenateLines(codeLines)
 
-            #
-            # SCOPE
-            #
-            pattern = re.compile(b".*[\{\}].*")
-            matches = pattern.findall(line)
-            if not matches:
-                tmp.append(line)
+        codeLines = self.__cleanupCodeLines(codeLines)
 
-        self.codeLines = tmp
+        self.codeLines = codeLines
 
         return self.codeLines
 
+    ##
+    #
+    #
     def renderBlockStatement(self,node):
         if node._basicGenerated:
             return None
         node._basicGenerated = True
 
         result = []
-        if node.isScope:
-            result.append(b"{")
+        result.append(b"{")
 
         for s in node.statements:
             handler = self.getHandler(s)
@@ -195,11 +330,13 @@ class BasicBuilder():
                 for b1 in b:
                     result.append(b1)
 
-        if node.isScope:
-            result.append(b"}")
+        result.append(b"}")
         
         return result
     
+    ##
+    #
+    #
     def renderExpressionStatement(self,node):
         if node._basicGenerated:
             return None
@@ -209,7 +346,9 @@ class BasicBuilder():
         handler = node.getHandler(node.statement)
         return [handler(node.statement)]
 
-    # InputExpression
+    ## InputExpression
+    #
+    #
     def renderInputExpression(self,node):
         if node._basicGenerated:
             return None
@@ -239,7 +378,9 @@ class BasicBuilder():
         
         return result
         
-    # PrintExpression
+    ## PrintExpression
+    #
+    #
     def renderPrintExpression(self,node):
         if node._basicGenerated:
             return None
@@ -270,7 +411,9 @@ class BasicBuilder():
 
         return result
 
-    # ForExpression
+    ## ForExpression
+    #
+    #
     def renderForExpression(self,node):
         if node._basicGenerated:
             return None
@@ -328,54 +471,64 @@ class BasicBuilder():
         
         return result
 
-    # IfExpression
+    ## IfExpression
+    #
+    #
     def renderIfExpression(self,node):
         if node._basicGenerated:
             return None
         node._basicGenerated = True
 
-
         result =  []
 
-        line = bytearray()
-        #line += "if"
-        line += self.tokenizer.tokenize(TokenTypes.IF)
-
-        line += self.prittifier
-        
         handler = self.getHandler(node.condition)
-        right = handler(node.condition)
-        line += right[0]
-        
+        condition = handler(node.condition)
+        conditionLine = condition[0]
+
+        trueLines = self.renderBlockStatement(node.trueCode)
+
+        # ENDIF LABEL
+        endifLabel = b"@label_"+bytearray(("00000"+node.id)[-5:],"ascii")
+
+        line = bytearray()
+        # IF
+        line += self.tokenizer.tokenize(TokenTypes.IF)
+        line += self.prittifier
+
+        # condition
+        line += self.tokenizer.tokenize(TokenTypes.NOT)
+        line += self.tokenizer.tokenize(TokenTypes.ROUNDOPEN)
+        line += conditionLine
+        line += self.tokenizer.tokenize(TokenTypes.ROUNDCLOSE)
         line += self.prittifier
         
-        #line += "then"
-        line += self.tokenizer.tokenize(TokenTypes.THEN)
-
+        #THEN
+        line += self.tokenizer.tokenize(TokenTypes.GOTO)
         line += self.prittifier
+        line += endifLabel
 
-        if len(node.trueCode)>0:
-            t = type(node.trueCode[0])
-            if t == cbas.Ast.Statements.StatementStatement:
-                if node.trueCode[0].statement.type == TokenTypes.GOTO:
-                    line += self.prittifier
-        
-        #result.append(line)
+        result.append(line)
 
-        for p in node.trueCode:
-            handler=self.getHandler(p)
-            b = handler(p)
-            line += b[0]
-            #result.append(line)
-            if p != node.trueCode[-1]:
-                #line += ","
-                line += self.tokenizer.tokenize(TokenTypes.COLON)
-        
+        # TRUE CODE
+        for trueLine in trueLines:
+            result.append(trueLine)
+
+        # ELIF CODE
+
+        # ELSE CODE
+
+        # ENDIF LABEL
+        line = bytearray()
+        line += self.prittifier
+        line += endifLabel
+        line += self.prittifier
         result.append(line)
 
         return result
         
-    # DimExpression
+    ## DimExpression
+    #
+    #
     def renderDimExpression(self,node):
         if node._basicGenerated:
             return None
@@ -412,7 +565,9 @@ class BasicBuilder():
 
         return [line]
     
-    # OnExpression
+    ## OnExpression
+    #
+    #
     def renderOnExpression(self,node):
         if node._basicGenerated:
             return None
@@ -453,7 +608,9 @@ class BasicBuilder():
 
         return [line]
 
-    # FunctionDefinitionExpression
+    ## FunctionDefinitionExpression
+    #
+    #
     def renderFunctionDefinitionExpression(self,node):
         if node._basicGenerated:
             return None
@@ -498,7 +655,9 @@ class BasicBuilder():
 
         return [line]
 
-    # FunctionCallExpression
+    ## FunctionCallExpression
+    #
+    #
     def renderFunctionCallExpression(self,node):
         if node._basicGenerated:
             return None
@@ -534,7 +693,9 @@ class BasicBuilder():
 
         return [line]
     
-    # StatementExpression
+    ## StatementExpression
+    #
+    #
     def renderStatementExpression(self,node):
         if node._basicGenerated:
             return None
@@ -570,7 +731,9 @@ class BasicBuilder():
         
         return [line]
 
-    # CallExpression
+    ## CallExpression
+    #
+    #
     def renderCallExpression(self,node):
         if node._basicGenerated:
             return None
@@ -585,7 +748,7 @@ class BasicBuilder():
         
         #line += "("
         # tab and spc must not have a ( in prg!
-        if not node.function.type in self.skipOpen:
+        if not node.function.type in self.skipOpen or self.configIndex == BasicBuilder.BASIC:
             line += self.tokenizer.tokenize(TokenTypes.ROUNDOPEN)
         
         for p in node.parameters:
@@ -609,7 +772,9 @@ class BasicBuilder():
 
         return [line]
 
-    # AssignmentExpression
+    ## AssignmentExpression
+    #
+    #
     def renderAssignmentExpression(self,node):
         if node._basicGenerated:
             return None
@@ -645,7 +810,9 @@ class BasicBuilder():
         result.append(line)
         return result
     
-    # GroupingExpression
+    ## GroupingExpression
+    #
+    #
     def renderGroupingExpression(self,node):
         if node._basicGenerated:
             return None
@@ -664,7 +831,9 @@ class BasicBuilder():
 
         return result
     
-    # PrefixExpression
+    ## PrefixExpression
+    #
+    #
     def renderPrefixExpression(self,node):
         if node._basicGenerated:
             return None
@@ -683,7 +852,9 @@ class BasicBuilder():
 
         return result
 
-    # BinaryExpression
+    ## BinaryExpression
+    #
+    #
     def renderBinaryExpression(self,node):
         if node._basicGenerated:
             return None
@@ -716,7 +887,9 @@ class BasicBuilder():
         result.append(line)
         return result
         
-    # PrimaryExpression
+    ## PrimaryExpression
+    #
+    #
     def renderPrimaryExpression(self,node):
         if node._basicGenerated:
             return None
@@ -739,7 +912,6 @@ class BasicBuilder():
                 line = self.tokenizer.tokenize(TokenTypes.FALSE)
 
         else:
-            #print(node.type, node.tag)
             #line = bytearray(str(node.value),"ascii")
             line = self.tokenizer.tokenize(node.type, node.value)
 

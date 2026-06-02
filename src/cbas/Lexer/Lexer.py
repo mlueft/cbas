@@ -58,6 +58,36 @@ class Lexer():
     ##
     #
     #
+    def __seperateLines(self, line):
+        return [line]
+        #
+        # Seperate lines by colon
+        #
+        parts = []
+        pos = 0
+        partLine = ""
+        while pos < len(line):
+            c = line[pos]
+
+            if c == ":":
+                parts.append(partLine)
+                partLine = ""
+            else:
+                partLine += c
+
+            pos += 1
+
+        parts.append(partLine) 
+
+        #if len(parts) > 1:
+        #    parts.insert(0, "{")
+        #    parts.append("}")
+
+        return parts
+
+    ##
+    #
+    #
     def tokenizeFile(self,file):
         if self.config is None:
             raise ValueError("Lexer config not set!")
@@ -68,7 +98,10 @@ class Lexer():
             while line:
                 line = line.strip("\n")
 
-                Tokenizer.tokenizeLine(self,line)
+                parts = self.__seperateLines(line)
+
+                for l in parts:
+                    Tokenizer.tokenizeLine(self,l)
 
                 cbas.log("", "debug")
                 line = source.readline()
@@ -144,7 +177,6 @@ class Tokenizer():
     def createToken(lexer,match,token):
         return ChainToken(match[0],lexer.line,lexer.pos,token.type)
 
-
     ##
     #
     #
@@ -188,7 +220,7 @@ class Tokenizer():
 
         return 0
 
-
+ 
     ##
     #
     #

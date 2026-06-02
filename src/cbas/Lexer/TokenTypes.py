@@ -14,7 +14,6 @@ class TokenTypes():
 	SEMICOLON     = 6
 	COLON         = 7
 	COMMA         = 8
-	COMMENT       = 9
 	IGNORE        = 10
 	LINESTART     = 11
 	LINEEND       = 12
@@ -277,7 +276,6 @@ class TokenTypes():
 		"assignment":  ASSIGNMENT,
 		"eq":          EQ,
 		"comma":       COMMA,
-		"comment":     COMMENT,
 		"ignore":      IGNORE,
 		"linestart":   LINESTART,
 		"lineend":     LINEEND,

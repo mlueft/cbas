@@ -49,6 +49,8 @@ class Linker():
         for i in range(0,len(lines)-1):
             currentline = lines[i]
             
+            if i == 90:
+                pass
             #
             # If the line is a label definition, we must calculate the line number
             # of the next basic line.
@@ -117,12 +119,15 @@ class Linker():
                     self.currentAddress += len(l)
                     l[0] = self.currentAddress&255
                     l[1] = (self.currentAddress>>8)&255
-            
-                # EOF
-                if self.prg:
-                    l += bytes([0,0])
 
             self.lineNumber += self.lineNumberStep
+
+        # EOF
+        if self.prg:
+            l += bytes([0,0])    
+
+            
+        
 
 
         return result

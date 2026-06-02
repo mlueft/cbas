@@ -183,13 +183,6 @@ class Compiler():
     #
     def compileFile(self, inputFile ):
 
-        #
-        # Generalize files
-        #
-        # 1. : is replaced by a linebreak
-        # 2. _ at the end of a line, contatenates the current and the next line.
-        # 3. Comments are removed.
-        
 
         #
         # LEXER

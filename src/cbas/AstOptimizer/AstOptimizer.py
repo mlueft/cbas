@@ -220,8 +220,59 @@ class StringOptimizer(AstOptimizer):
         super().__init__()
 
     def main(self, node, direction):
-        pass
 
+        replacement = node
+        replacement = self._resolveStringArithmetic(replacement)
+        node.replace(replacement)
+        
+    def _resolveStringArithmetic(self, node):
+
+        if type(node) is not BinaryExpression:
+            return node
+
+        if type(node.left) is not PrimaryExpression:
+            return node
+        
+        if type(node.operator) is not PrimaryExpression:
+            return node
+        
+        if type(node.right) is not PrimaryExpression:
+            return node
+        
+        if node.left.tag not in [ "int", "string"]:
+            return node
+        
+        if node.right.tag not in [ "int", "string"]:
+            return node
+        
+        if node.operator.value not in [ "*", "+" ]:
+            return node
+                
+        if node.left.tag == "int":
+            lv = int(node.left.value)
+        else:
+            lv = node.left.value[1:-1]
+
+        if node.right.tag == "int":
+            rv = int(node.right.value)
+        else:
+            rv = node.right.value[1:-1]
+
+        op = node.operator.value
+
+        if   op == "*": r = lv*rv
+        elif op == "+": 
+            if node.left.tag == "string" and node.right.tag == "string":
+                r = lv + rv
+            else:return node
+        else:return node
+
+        #return node
+    
+        replacement = PrimaryExpression("string",'"{}"'.format(r),ChainToken(str(r),0,0,TokenTypes.STRING ))
+
+        #print( "{}{}{} => {}".format(lv,op,rv,r) )
+        return replacement
 
 class SyntaxCheckerV2(AstOptimizer):
 

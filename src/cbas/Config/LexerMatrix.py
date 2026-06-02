@@ -90,7 +90,6 @@ class LexerMatrix():
         "literalInt":           { "order":   40, "handler": Tokenizer.defaultHandler     , "type": TokenTypes.INTEGER,     "expression": "[0-9]+[%]?"                           },
         "literalBoolean":       { "order":   41, "handler": Tokenizer.defaultHandler     , "type": TokenTypes.BOOLEAN,     "expression": "(?i)(true|false)"                     },
         "literalString":        { "order":   50, "handler": Tokenizer.stringHandler      , "type": TokenTypes.STRING,      "expression": '(?i)"[^"]*"'                          },
-        "comment":              { "order":  100, "handler": Tokenizer.defaultHandler     , "type": TokenTypes.COMMENT,     "expression": "(?i)rem.*"                            }, # s $8F
         "printUsing":           { "order":  110, "handler": Tokenizer.defaultHandler     , "type": TokenTypes.PRINTUSING,  "expression": "(?i)PRINT USING"                      },
         "collision":            { "order":  120, "handler": Tokenizer.defaultHandler     , "type": TokenTypes.COLLISION,   "expression": "(?i)COLLISION"                        }, # s $fe $17
         "directory":            { "order":  130, "handler": Tokenizer.defaultHandler     , "type": TokenTypes.DIRECTORY,   "expression": "(?i)DIRECTORY"                        }, # s v4 $DA v34 v7 $EE
@@ -319,8 +318,7 @@ class LexerMatrix():
         "mex_or":               { "type": "alias", "target":"logicOr",                       "expression": "\|\|"                  },
         "mex_and":              { "type": "alias", "target":"logicAnd",                      "expression": "\&\&"                  },
         "mex_not":              { "type": "alias", "target":"logicNot",                      "expression": "!"                     },
-        "mex_neq":              { "type": "alias", "target":"compareNeq",   "order":1849,    "expression": "!\="                   },
-        "mex_comment":          { "type": "alias", "target":"comment",                       "expression": "(?i)//.*"              },
+        "mex_neq":              { "type": "alias", "target":"compareNeq",   "order":1849,    "expression": "!\="                   }
         
     }
     
@@ -362,7 +360,6 @@ class LexerMatrix():
         "collect":              [ 0,    0,    0,    1,    1,    1,    0,    1,    1    ],
         "collision":            [ 0,    0,    0,    0,    1,    0,    0,    1,    1    ],
         "color":                [ 0,    0,    0,    1,    1,    0,    0,    1,    1    ],
-        "comment":              [ 0,    0,    1,    1,    1,    1,    1,    1,    1    ],
         "concat":               [ 0,    0,    0,    0,    1,    1,    0,    1,    1    ],
         "cont":                 [ 0,    0,    1,    1,    1,    1,    1,    1,    1    ],
         "copy":                 [ 0,    0,    0,    1,    1,    1,    1,    1,    1    ],
@@ -566,8 +563,7 @@ class LexerMatrix():
         "mex_or":               [ 0,    0,    1,    1,    1,    1,    1,    1,    1    ],
         "mex_and":              [ 0,    0,    1,    1,    1,    1,    1,    1,    1    ],
         "mex_not":              [ 0,    0,    1,    1,    1,    1,    1,    1,    1    ],
-        "mex_neq":              [ 0,    0,    1,    1,    1,    1,    1,    1,    1    ],
-        "mex_comment":          [ 0,    0,    1,    1,    1,    1,    1,    1,    1    ]
+        "mex_neq":              [ 0,    0,    1,    1,    1,    1,    1,    1,    1    ]
 
     }
 

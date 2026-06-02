@@ -5,9 +5,9 @@
 #define PRINTAT(x,y,message) POKE781,y:POKE782,x:SYS(65520):PRINT message
 #define CLR print "{clr}"
 
-//
-// GLOBALS
-//
+/*
+   Here globals variables are initialized
+*/
 MENU_INDEX = 0
 MENU_TEXT0$ = "menu1"
 MENU_TEXT1$ = "menu2"
@@ -21,8 +21,22 @@ MENU_TEXT8$ = "quit"
 
 goto @main
 
+/*
+    To use the menu fill global variables MENU_TEXT0$, MENU_TEXT1$, ...
+    example: To limit to three option set the fourth option to ""
+        MENU_TEXT0$ = "menu1"
+        MENU_TEXT1$ = "menu2"
+        MENU_TEXT2$ = "menu3"
+        MENU_TEXT3$ = ""
+        gosub @runMenu  // Show the menu
+
+        print MENU_INDEX
+
+        //After return the variable MENU_INDEX contains the index of THEN
+        //selected menu item.
+*/
 @runMenu
-    {
+{
     #define POS_X 3
     #define POS_Y 15
     MENU_INDEX = 0
@@ -87,19 +101,31 @@ goto @main
 
     @menuMainSelected
     return
-    }
+}
 
+/*
+    Gosub to idleLoop whenever a background task could be performed
+    without the affect the users experience.
+    For example the menu key loop jumps here whenever no key is pressed.
+    So we are just waiting for the user to press a key. We can use this time
+    to do something usefull.
+
+    Design idleLoop in a way it's not blocking and returns as fast as possible.
+*/
 @idleLoop
-    {
+{
     // Background tasks are done here
     color = peek(53280)+1
     if color>255 then color=0
     poke 53280,color
     return
-    }
+}
 
+/*
+    gosub @mainMenu starts the main menu loop
+*/
 @mainMenu
-    {
+{
     MENU_TEXT0$ = "menu1"
     MENU_TEXT1$ = "menu2"
     MENU_TEXT2$ = "menu3"
@@ -110,10 +136,13 @@ goto @main
     MENU_TEXT7$ = "quit"
     gosub @runMenu
     return
-    }
+}
 
+/*
+    main is the main entry point of the programm
+*/
 @main
-    {
+{
     CLR
     PRINTAT(5,5,"the test")
     print ""
@@ -122,11 +151,13 @@ goto @main
     print "and return to select!"
 
     gosub @mainMenu
-    }
-    
+}
 
+/*
+    @quit is the quit routine of the program.
+*/
 @quit
-    {
+{
     CLR
     PRINTAT( 5, 10, "{pink}see you next time!" )
     PRINTAT( 5, 11, "you selected item";MENU_INDEX )
@@ -136,4 +167,4 @@ goto @main
     // poke 2051,0
     PRINTAT( 0,0, "load";chr$(34);"testapp.bas.prg";chr$(34);"";chr$(44);"8";chr$(44);"1" )
     PRINTAT( 0,5, "run" )
-    }
+}

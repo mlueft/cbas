@@ -156,8 +156,6 @@ class ParserMatrix():
         "identifier":         { "category": "nud", "bindingpower": 0,                           "type": TokenTypes.IDENTIFIER,   "handler": ExpressionParser.parsePrimaryExpression   },
         "lineNumber":         { "category": "nud", "bindingpower": 0,                           "type": TokenTypes.LINENUMBER,   "handler": ExpressionParser.parsePrimaryExpression   },
         "label":              { "category": "nud", "bindingpower": 0,                           "type": TokenTypes.LABEL,        "handler": StatementParser.parseLabelStatement     },
-        "comment":            { "category": "nud", "bindingpower": 0,                           "type": TokenTypes.COMMENT,      "handler": ExpressionParser.parsePrimaryExpression   },
-#        "function":           { "category": "nud", "bindingpower": 0,                           "type": TokenTypes.FUNCTION,    "handler": ExpressionParser.parsePrimaryExpression   },
         
         # 8 - unary & prefix
         "unary":              { "category": "nud", "bindingpower": 0,                           "type": TokenTypes.MINUS,        "handler": ExpressionParser.parsePrefixExpression    },
@@ -244,7 +242,7 @@ class ParserMatrix():
         
         # grouping expr
         "grouping":           { "category": "nud", "bindingpower": 0,                           "type": TokenTypes.ROUNDOPEN,    "handler": ExpressionParser.parseGroupingExpression     },
-        "block_statement":    { "category": "nud", "bindingpower": 0,                           "type": TokenTypes.CURLYOPEN,    "handler": StatementParser.parseScopeStatement          },
+        "block_statement":    { "category": "nud", "bindingpower": 0,                           "type": TokenTypes.CURLYOPEN,    "handler": StatementParser.parseBlockStatement          },
 
 
         "lineend":            { "category": "nud", "bindingpower": 0,                           "type": TokenTypes.LINEEND,      "handler": ExpressionParser.parsePrimaryExpression      },
@@ -284,7 +282,6 @@ class ParserMatrix():
         "identifier":           [ 0,    1,    1,    1,    1,    1,    1,    1,    1    ],
         "lineNumber":           [ 0,    0,    1,    1,    1,    1,    1,    1,    1    ],
         "label":                [ 0,    0,    1,    1,    1,    1,    1,    1,    1    ],
-        "comment":              [ 0,    0,    1,    1,    1,    1,    1,    1,    1    ],
         "unary":                [ 1,    1,    1,    1,    1,    1,    1,    1,    1    ],
         "grouping":             [ 1,    1,    1,    1,    1,    1,    1,    1,    1    ],
         "block_statement":      [ 0,    0,    1,    1,    1,    1,    1,    1,    1    ],

@@ -1,3 +1,15 @@
+# MEX - My eytensions
+
+* We use labels instead of line numbers
+* Logical, arithmetic and string expressions are resolved at compile time.
+* Variables of any size are allowed.
+* { } can be used for scoping
+* Experimental. Lokal variables from a scope are reused after the scope.
+* // can be used for single line comments.
+* /* and */ can be used for multi line comments.
+* 
+
+
 # Preprocessor
 
 ## CLI
@@ -147,7 +159,7 @@ cbas.py -s test.bas -o ./obj -l ./lib;/tmp;c:\temp
 0. Preprocessor
    1. Filecleaner
       1. Remove empty lines.
-      2. Concatenate lines
+      2. Concatenate lines.( Lines ending with unserscore get the next line concatenated.)
       3. Remove comments.
    2. Execute Directives.
 1. Lexer
@@ -157,11 +169,16 @@ cbas.py -s test.bas -o ./obj -l ./lib;/tmp;c:\temp
 3. Parser
    Are tags at PrimaryExpression nedded?
 4. Ast-Optimizers
+   1. Shemantic error checking
+   2. Resolve arithmetic expressions
+   3. Resolve logical expressions
+   4. Resolve Stringarithmetic
 5. codeBuilders
    1. Generate code lines from Ast.
       Tokenizer manages generation of basic or prg
-   2. resolve Symbols
-   3. Cleanup Code.
+   2. Resolve Symbols
+   3. Concatenate lines. (Combines  commants seperated by :)
+   4. Cleanup Code.
       1. Remove scope definitions.
 6. Write binary file.
 

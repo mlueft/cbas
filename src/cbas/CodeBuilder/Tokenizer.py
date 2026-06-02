@@ -70,7 +70,6 @@ class Tokenizer():
             TokenTypes.PRINT:            [ [b"print"  ], [153],              ],
             TokenTypes.PRINT_SHARP:      [ [b"print#" ], [152],              ],
             TokenTypes.READ:             [ [b"read"   ], [135],              ],
-            TokenTypes.COMMENT:          [ [b"rem"    ], [143],              ],
             TokenTypes.RESTORE:          [ [b"restore"], [140],              ],
             TokenTypes.RETURN:           [ [b"return" ], [142],              ],
             TokenTypes.RIGHT_DOLLAR:     [ [b"right$" ], [201],              ],
@@ -201,15 +200,14 @@ class Tokenizer():
             TokenTypes.ROUNDOPEN:        [ [b"("      ], [40]                ],
             TokenTypes.ROUNDCLOSE:       [ [b")"      ], [41]                ],
             TokenTypes.PISIGN:           [ [b"{pi}"   ], [255]               ],
-            TokenTypes.TRUE:             [ [b"0"      ], [0]                 ],
-            TokenTypes.FALSE:            [ [b"-1"     ], [1]                ]
+            TokenTypes.TRUE:             [ [b"1"      ], [b"1"]                 ],
+            TokenTypes.FALSE:            [ [b"0"      ], [b"0"]                ]
 
         }
 
         # Values of these types are unchanged.
         # All other values are tokenized
         self.valueTokens = [
-            TokenTypes.COMMENT,
             TokenTypes.IDENTIFIER,
             TokenTypes.LABEL
         ]

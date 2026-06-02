@@ -37,7 +37,7 @@ class ExpressionParser():
 
         left = nudFunction(parser)
          
-        # This is for linenumber/labels/eof
+        # This is for linenumber/labels/eof/curlyclose
         if parser.currentTokenType not in Lookups.bp:
             cbas.log("end:parseExpression ... ", "debug" )
             return left
@@ -120,12 +120,6 @@ class ExpressionParser():
             cbas.log("end:parsePrimaryExpression", "debug" )
             return result
         
-        elif type == TokenTypes.COMMENT:
-            token = parser.advance()
-            result = PrimaryExpression( "comment", token.code, token)
-            cbas.log("end:parsePrimaryExpression", "debug" )
-            return result
-
         elif type == TokenTypes.LINEEND:
             token = parser.advance()
             result = PrimaryExpression( "lineend", token.code, token)

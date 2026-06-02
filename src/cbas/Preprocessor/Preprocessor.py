@@ -202,31 +202,11 @@ class Preprocessor():
     ##
     #
     #
-    def __readSingleLine(self,inputStream):
-        #return inputStream.readline()
-        result = ""
-
-        line = inputStream.readline()
-
-        # EOF?
-        if line == "":
-            return line
-        
-        #
-        # We remove single line comments
-        #
-
-
-        return line
-    
-    ##
-    #
-    #
     def __readLine(self, inputStream):
         
         result = ""
 
-        line = self.__readSingleLine(inputStream)
+        line = inputStream.readline()
         line = line.strip("\n")
 
         # EOF?
@@ -238,7 +218,7 @@ class Preprocessor():
             # We concatenate the next line.
             while line[-1:] == "_":
                 result += line[:-1]
-                line = self.__readSingleLine(inputStream)
+                line = inputStream.readline()
 
             result += line+"\n"
 
