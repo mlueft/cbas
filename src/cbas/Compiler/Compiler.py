@@ -1,13 +1,10 @@
 import os
-import struct
 
 import cbas
 import cbas.Config.Config
 import cbas.TokenChainOptimizer.TokenChainOptimizer
 import cbas.Parser.Parser
 import cbas.Lexer.Lexer
-import cbas.Ast.Expressions
-import cbas.Ast.Statements
 import cbas.DataStructures.TraverseMode
 import cbas.Compiler.CompilerPasses
 import cbas.CodeBuilder.BasicBuilder

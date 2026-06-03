@@ -158,9 +158,10 @@ cbas.py -s test.bas -o ./obj -l ./lib;/tmp;c:\temp
 
 0. Preprocessor
    1. Filecleaner
-      1. Remove empty lines.
-      2. Concatenate lines.( Lines ending with unserscore get the next line concatenated.)
-      3. Remove comments.
+      1. Concatenate lines.( Lines ending with unserscore get the next line concatenated.)
+      2. Remove comments.
+      3. Clean whitespaces.
+      4. Remove empty lines.
    2. Execute Directives.
 1. Lexer
    1. Tokenize Source code

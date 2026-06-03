@@ -24,56 +24,149 @@ class FileCleaner():
     ##
     #  1. Remove empty lines.
     #  2. Remove single line comments.
-    #  3. Remove multi line comments. not yet
+    #  3. Remove multi line comments.
     #  4. Concatenate lines ending with underline.
     #
     def __main(self, inputStream, outputStream):
 
+            #
+            # Read lines
+            #
             lines = inputStream.readlines()
 
+            #
+            # Clean lines
+            #
             lines = self.removeLineBreak(lines)
-
-            lines = self.removeEmptyLines(lines)
-
             lines = self.removeComments(lines)
-
-            lines = self.removeEmptyLines(lines)
-
             lines = self.concatenateLines(lines)
-
+            lines = self.cleanWhiteSpaces(lines)
             lines = self.removeEmptyLines(lines)
 
-            #lines = self.__readLines(inputStream)
-
+            #
+            # Write lines
+            #
             for line in lines:
                 outputStream.write( line +"\n" )
 
+    ##
+    #
+    #
+    def cleanWhiteSpaces(self, lines):
+        result = []
+        for line in lines:
 
+            #
+            # We store the initial indentation
+            #
+            tmp = line.rstrip()
+            initialIndentation = " "*( len(tmp)-len(tmp.lstrip()) )
+            
+            
+            
+            line = line.lstrip()
+            # Seperate code parts and strings
+            # We have to break up the line into a list
+            # of code and string literals.
+            #
+            parts = []
+            pos = 0
+            partLine = ""
+            while pos < len(line):
+                c = line[pos]
+                
+                if c == '"':
+
+                    parts.append(partLine)
+                    partLine = ""
+
+                    # a string starts
+                    partLine += c
+
+                    # we read till the end of the string
+                    while pos < len(line)-1:
+                        pos += 1
+                        c = line[pos]
+                        if c != '"':
+                            partLine += c
+                        else:
+                            # end of string reached
+                            partLine += c
+                            parts.append(partLine)
+                            partLine = "" 
+
+                else:
+                    partLine += c
+
+                pos += 1
+
+            parts.append(partLine)
+
+
+            #
+            # Remove empty parts
+            #
+            tmp1 = []
+            for p in parts:
+                if len(p)>0:
+                    tmp1.append(p)
+            parts=tmp1
+        
+            #
+            # Replace all tabs with space in none string parts
+            #
+            for i,part in enumerate(parts):
+                if part[0] != '"':
+                    parts[i] = part.replace("\t", " ")
+    
+            #
+            # Replace all double spaces with a single space in none string parts
+            #
+            for i,part in enumerate(parts):
+                if part[0] != '"':
+                    # Sorry, this is dirty :-)
+                    part = part.replace("  ", " ")
+                    part = part.replace("  ", " ")
+                    part = part.replace("  ", " ")
+                    part = part.replace("  ", " ")
+                    part = part.replace("  ", " ")
+                    part = part.replace("  ", " ")
+                    part = part.replace("  ", " ")
+                    part = part.replace("  ", " ")
+                    part = part.replace("  ", " ")
+                    part = part.replace("  ", " ")
+                    part = part.replace("  ", " ")
+                    part = part.replace("  ", " ")
+                    part = part.replace("  ", " ")
+                    part = part.replace("  ", " ")
+                    parts[i] = part.replace("  ", " ")
+        
+            #
+            # Build new line
+            #
+            newLine = initialIndentation
+            for p in parts:
+                newLine += p
+                
+            result.append(newLine)
+            
+        return result
+        
     ##
     #
     #
     def concatenateLines(self,lines):
 
         linenr = len(lines)-1
-        newLine = ""
-        while linenr > 0:
-
+        while linenr >= 0:
             line = lines[linenr]
-            
             line = line.strip()
-
             if line[-1:] == "_":
-
                 lines[linenr] = lines[linenr].rstrip()
-
                 lines[linenr] = lines[linenr].rstrip("_")
-
                 lines[linenr] += lines[linenr+1].strip()
-
                 lines[linenr+1] = ""
-
             linenr -= 1
-
 
         return lines
 
@@ -158,7 +251,6 @@ class FileCleaner():
             newLine = ""
             linenr += 1
 
-
         return result    
 
     ##
@@ -180,47 +272,4 @@ class FileCleaner():
             line = line.rstrip("\n")
             result.append(line)
         return result
-
-    ##
-    #
-    #
-    def ___readLines(self,inputStream):
-        
-        result = ""
-
-
-        #
-        # EOF?
-        #
-        if line == "":
-            return line
-        
-
-        #
-        # We remove single line comments
-        #
-        line = self.__removeSingleLineComments(line)
-
-        # The line was a comment, so we take the next one.
-        if line is None:
-            line = self.___readLines(inputStream)
-
-        line = line.rstrip()
-
-        if line[-1:] != "_":
-            return line
-
-        #
-        # We concatenate the next line.
-        #
-        line = line.strip()
-        line = line.rstrip("_")
-        result += line
-
-        line = self.___readLines(inputStream)
-        result += line
-
-        return result
-    
-
 

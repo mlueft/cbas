@@ -10,7 +10,7 @@ Compiler = cbas.Compiler.Compiler.Compiler
 SymbolTable = cbas.Preprocessor.SymbolTable.SymbolTable
 Config = cbas.Config.Config.Config
 
-##
+## Stors the runtime state while preprocessing
 #
 #
 class RuntimeState():
@@ -127,9 +127,10 @@ class Preprocessor():
     def __main(self, outputStream, inputStream):
     
         # Read the first line
-        line = self.__readLine(inputStream)
+        line = inputStream.readline()
 
         while line:
+            line = line.rstrip("\n")
             handler = self.__getHandler(line)
             if handler:
 
@@ -147,10 +148,13 @@ class Preprocessor():
                 # We don't have a handler, so the line is regular source code
                 # we write it in the output file.
                 if self.__runTimeState.get(Preprocessor.ST_WRITE_LINE):
-                    outputStream.write(self.__runTimeState.get(Preprocessor.ST_INDENTATION)+self.__symbolTable.replaceSymbols(line) )
+                    line = self.__symbolTable.replaceSymbols(line)
+                    line = self.__runTimeState.get(Preprocessor.ST_INDENTATION)+line
+                    line += "\n"
+                    outputStream.write(line)
             
             # Read next line.
-            line = self.__readLine(inputStream)
+            line = inputStream.readline()
 
     ## Returns the handler to the pp directive in line.
     #
@@ -158,6 +162,7 @@ class Preprocessor():
     def __getHandler(self, line):
     
         line = line.strip()
+        
         if len(line) == 0: return None
         if line[0] != "#": return None
            
@@ -173,8 +178,6 @@ class Preprocessor():
     def __getParameters(self,line):
         
         result = []
-        
-        line = line.strip()
         
         # TODO: Spaces in values will break this!
         parts = line.split(" ")
@@ -198,42 +201,13 @@ class Preprocessor():
         
         pos = line.find("#")
         return line[:pos]
-
-    ##
-    #
-    #
-    def __readLine(self, inputStream):
-        
-        result = ""
-
-        line = inputStream.readline()
-        line = line.strip("\n")
-
-        # EOF?
-        if line == "":
-            return line
-        
-        if line[-1:] == "_":
-
-            # We concatenate the next line.
-            while line[-1:] == "_":
-                result += line[:-1]
-                line = inputStream.readline()
-
-            result += line+"\n"
-
-        else:
-            # We are just returning the next line.
-            result = line+"\n"
-
-
-        return result
     
     ## Handles #include
     #
     #
     def __handleInclude(self, outputStream, line  ):
     
+        line = line.lstrip()
         self.__runTimeState.push()
 
         #
@@ -261,7 +235,7 @@ class Preprocessor():
                 with io.open(pathIncludeFile, "r", encoding="utf-8") as includefile:
                     # We need indentation as parameter, because it could be changed
                     # in the includes file.
-                    self.__main(outputStream, includefile)#, self.indentation)
+                    self.__main(outputStream, includefile)
                 
                 # At the end we need to write a line break
                 # Because there is a linebreak at the end of
@@ -274,6 +248,7 @@ class Preprocessor():
     #
     #
     def __handlePragma(self, outputStream, line  ):
+        line = line.lstrip()
         parameters = self.__getParameters(line)
         cmd = parameters[0]
         value = parameters[1]
@@ -289,10 +264,7 @@ class Preprocessor():
     #
     def __handleDefine(self, outputStream, line  ):
 
-        # line cleaning.
         line = line.lstrip()
-        line = line.rstrip("\n")
-
         # We remove the '#define' string
         line = line[len(Preprocessor.CMD_DEFINE):].lstrip()
 
@@ -336,6 +308,7 @@ class Preprocessor():
     #
     #
     def __handleUndefine(self, outputStream, line  ):
+        line = line.lstrip()
         parameters = self.__getParameters(line)
         assignee = parameters[0]
         self.__symbolTable.removeSymbol(assignee)
@@ -344,6 +317,7 @@ class Preprocessor():
     #
     #
     def __handleIfdef(self, outputStream, line  ):
+        line = line.lstrip()
         parameters = self.__getParameters(line)
 
         assignee = parameters[0]
@@ -356,6 +330,7 @@ class Preprocessor():
     #
     #
     def __handleIfNdef(self, outputStream, line  ):
+        line = line.lstrip()
         # We validate the if statement.
         self.__handleIfdef(outputStream,line)
         # We inverse the writeLine state
@@ -365,6 +340,7 @@ class Preprocessor():
     #
     #
     def __handleElse(self, outputStream, line  ):
+        
             self.__runTimeState.set(Preprocessor.ST_WRITE_LINE, not self.__runTimeState.get(Preprocessor.ST_WRITE_LINE))
 
     ## Handles #endif
@@ -377,11 +353,8 @@ class Preprocessor():
     #
     #
     def __handleIf(self, outputStream, line  ):
-        
-        # line cleaning.
-        line = line.lstrip()
-        line = line.rstrip("\n")
 
+        line = line.lstrip()
         # removes the #if
         expr = line[len(Preprocessor.CMD_IF):].strip()
 

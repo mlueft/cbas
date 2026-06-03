@@ -1,14 +1,9 @@
-import getopt, sys
+import getopt, sys, os
 
 import cbas
 import cbas.Compiler.Compiler
 
 Compiler = cbas.Compiler.Compiler.Compiler
-
-# -s Source file to compile.
-# -o Output folder. Compiled files are stored in this folder.
-# -v Output version.
-# -t Object folder.
 
 def showHelp():
     print( "Cbas Compiler" )
@@ -113,6 +108,20 @@ def main():
         print( "beautify          : {}".format( beautify ))
         print( "reuseVariables    : {}".format( cbas.symbolTable.reuseVariables ))
 
+
+    #
+    # Create folders
+    #
+    try:
+        os.mkdir(objectFolder)
+    except FileExistsError:
+        pass
+    
+    try:
+        os.mkdir(outputFolder)
+    except FileExistsError:
+        pass
+    
     #
     # Run Compiler
     #

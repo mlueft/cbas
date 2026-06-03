@@ -1,9 +1,14 @@
-#define KEY_UP "{u"+"p}"
+#define KEY_UP "{u"				+_
+"p}"
 #define KEY_DOWN "{down}"
 #define KEY_CONFIRM "{return}"
 
-#define PRINTAT(x,y,message) POKE781,y:POKE782,x:SYS(65520):PRINT message
+#define PRINTAT(x,y,message) POKE781,y:POKE782,x:SYS(65520):PRINTmessage
 #define CLR print "{clr}"
+
+#if 1
+a=0
+#endif
 
 /*
    Here global variables are initialized

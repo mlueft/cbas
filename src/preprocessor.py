@@ -2,10 +2,8 @@ import getopt, sys, os, shutil
 
 import cbas.Preprocessor.Preprocessor
 import cbas.Preprocessor.FileCleaner
-#import cbas.Config.Config
 
 Preprocessor = cbas.Preprocessor.Preprocessor.Preprocessor
-#Config = cbas.Config.Config.Config
 FileCleaner = cbas.Preprocessor.FileCleaner.FileCleaner
 
 # -s Source file to process.
@@ -29,7 +27,6 @@ def showHelp():
 #
 #
 def runFileCleaner(inputFile,outputFile):
-
     cleaner = FileCleaner()
     cleaner.main(inputFile,outputFile)
 
@@ -40,7 +37,6 @@ def runPreProcessor(inputFile, outputFile, outputFolder, libFolders):
     preprocessor = Preprocessor()
     preprocessor.outputFolder = outputFolder
     preprocessor.libFolders = libFolders
-    
     preprocessor.main(inputFile, outputFile)
 
 ##
@@ -55,7 +51,7 @@ def main():
     # Debug parameters    
     inputFile    = r"./examples/testapp.bas"
     #inputFile    = r"./examples/basic_V2.bas"
-    #inputFile    = r"./examples/pp_include.bas"
+    inputFile    = r"./examples/pp_include.bas"
     outputFolder = r"./obj"
     libFolders   = [
         r"./lib"
@@ -93,14 +89,15 @@ def main():
     except getopt.error as err:
         print(str(err))
 
-
-    if False:
-        print( "=====================================" )
-        print( "inputFile         : {}".format( inputFile ))
-        print( "libFolders        : {}".format( libFolders ))
-        print( "outputFolder      : {}".format( outputFolder ))
-
-
+    #
+    # Create folder
+    #
+    try:
+        os.mkdir(outputFolder)
+    except FileExistsError:
+        pass
+    
+    
     # absolute path for the input file.
     outputFile = os.path.join( outputFolder,os.path.basename(inputFile)+".pass0" )
 
