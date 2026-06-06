@@ -1,9 +1,6 @@
 from operator import attrgetter
 
-import cbas.Config.LexerConfig
 import cbas.Config.TokenChainOptimizerConfig
-import cbas.Config.ParserConfig
-import cbas.Config.AstOptimizerConfig
 
 import cbas.Lexer.TokenTypes
 import cbas.Lexer.ConfigToken
@@ -18,9 +15,9 @@ import cbas.Ast.Statements
 import cbas.AstOptimizer.ConfigToken
 import cbas.DataStructures.TraverseMode
 
-import cbas.Config.LexerMatrix
-import cbas.Config.ParserMatrix
-import cbas.Config.AstOptimizerMatrix
+import cbas.Config.LexerConfig
+import cbas.Config.ParserConfig
+import cbas.Config.AstOptimizerConfig
 import cbas.Compiler.CompilerPasses
 
 TokenTypes                = cbas.Lexer.TokenTypes.TokenTypes
@@ -58,7 +55,7 @@ class Config():
         pass
 
     def getLexerConfig(self):
-        parameters = cbas.Config.LexerMatrix.LexerMatrix.Parameters[self.configIndex]
+        parameters = cbas.Config.LexerConfig.Matrix.Parameters[self.configIndex]
         result = LexerConfig()
         result.name = parameters["name"]
         result.description = parameters["description"]
@@ -66,14 +63,17 @@ class Config():
         result.markLineend = parameters["markLineend"]
         result.markEOF = parameters["markEOF"]
         
-        for key in cbas.Config.LexerMatrix.LexerMatrix.Matrix.keys():
-            if cbas.Config.LexerMatrix.LexerMatrix.Matrix[key][self.configIndex] == 1:
+        definitions = cbas.Config.LexerConfig.Matrix.Definitions
+        matrix = cbas.Config.LexerConfig.Matrix.Matrix
+
+        for key in matrix.keys():
+            if matrix[key][self.configIndex] == 1:
                 
-                token = cbas.Config.LexerMatrix.LexerMatrix.Tokens[key]
+                token = definitions[key]
                 
                 if token["type"] == "alias":
                     target = token["target"]
-                    tokenTmp = cbas.Config.LexerMatrix.LexerMatrix.Tokens[target]
+                    tokenTmp = definitions[target]
                     if "expression" in token:
                         tokenTmp["expression"] = token["expression"]
                     if "order" in token:
@@ -95,18 +95,31 @@ class Config():
     def getTokenChainOptimizerConfig(self):
         result = TokenChainOptimizerConfig()
 
+        definitions = cbas.Config.TokenChainOptimizerConfig.Matrix.Definitions
+        matrix = cbas.Config.TokenChainOptimizerConfig.Matrix.Matrix
+
+        keys = definitions.keys()
+        for key in keys:
+            if matrix[key][self.configIndex] == 1:
+                token = definitions[key]
+                result.tokens.append( token )
+        
         return result
 
     def getParserConfig(self):
-        parameters = cbas.Config.ParserMatrix.ParserMatrix.Parameters[self.configIndex]
+        parameters = cbas.Config.ParserConfig.Matrix.Parameters[self.configIndex]
         result = ParserConfig()
         result.name = parameters["name"]
-        result.functions = cbas.Config.ParserMatrix.ParserMatrix.Functions
-        result.statements = cbas.Config.ParserMatrix.ParserMatrix.Statements
-        keys = cbas.Config.ParserMatrix.ParserMatrix.Matrix.keys()
+        result.functions = cbas.Config.ParserConfig.Matrix.Functions
+        result.statements = cbas.Config.ParserConfig.Matrix.Statements
+        
+        matrix = cbas.Config.ParserConfig.Matrix.Matrix
+        definitions = cbas.Config.ParserConfig.Matrix.Definitions
+
+        keys = matrix.keys()
         for key in keys:
-            if cbas.Config.ParserMatrix.ParserMatrix.Matrix[key][self.configIndex] == 1:
-                token = cbas.Config.ParserMatrix.ParserMatrix.Tokens[key]
+            if matrix[key][self.configIndex] == 1:
+                token = definitions[key]
                 result.tokens.append(
                     ParserConfigToken(
                         token["bindingpower"],
@@ -123,24 +136,23 @@ class Config():
     def getAstOptimizerConfig(self,compilerPass):
         result = AstOptimizerConfig()
 
-        parameters = cbas.Config.AstOptimizerMatrix.AstOptimizerMatrix.Parameters[self.configIndex]
+        parameters = cbas.Config.AstOptimizerConfig.Matrix.Parameters[self.configIndex]
         result.name = parameters["name"]
         result.description = parameters["description"]
     
+        definitions = cbas.Config.AstOptimizerConfig.Matrix.Definitions
+
         if compilerPass == CompilerPasses.CHECK_SEMANTIC:
-            matrix = cbas.Config.AstOptimizerMatrix.AstOptimizerMatrix.Matrixsemanticcheck
-            tokens = cbas.Config.AstOptimizerMatrix.AstOptimizerMatrix.TokensSemanticcheck
-
+            matrix = cbas.Config.AstOptimizerConfig.Matrix.Matrixsemanticcheck
         elif compilerPass == CompilerPasses.POST_PARSER:
-            matrix = cbas.Config.AstOptimizerMatrix.AstOptimizerMatrix.MatrixPostParser
-            tokens = cbas.Config.AstOptimizerMatrix.AstOptimizerMatrix.TokensPostParser
+            matrix = cbas.Config.AstOptimizerConfig.Matrix.MatrixPostParser
 
-        keys = tokens.keys()
+        keys = definitions.keys()
         for key in keys:
-            if matrix[key][self.configIndex] == 1:
+            if key in matrix and matrix[key][self.configIndex] == 1:
                 #print(key)
                 result.handlers.append(
-                    [tokens[key]["instance"],tokens[key]["direction"]]
+                    [definitions[key]["instance"],definitions[key]["direction"]]
                 )
         
         return result

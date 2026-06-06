@@ -9,7 +9,6 @@
 * /* and */ can be used for multi line comments.
 * 
 
-
 # Preprocessor
 
 ## CLI
@@ -158,7 +157,7 @@ cbas.py -s test.bas -o ./obj -l ./lib;/tmp;c:\temp
 
 0. Preprocessor
    1. Filecleaner
-      1. Concatenate lines.( Lines ending with unserscore get the next line concatenated.)
+      1. Concatenate lines.( Lines ending with underscores get the next line concatenated.)
       2. Remove comments.
       3. Clean whitespaces.
       4. Remove empty lines.

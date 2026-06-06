@@ -5,10 +5,13 @@ import cbas
 import cbas.Compiler.Compiler
 import cbas.Preprocessor.SymbolTable
 import cbas.Config.Config
+import cbas.Preprocessor.FileCleaner
 
 Compiler = cbas.Compiler.Compiler.Compiler
 SymbolTable = cbas.Preprocessor.SymbolTable.SymbolTable
 Config = cbas.Config.Config.Config
+FileCleaner = cbas.Preprocessor.FileCleaner.FileCleaner
+
 
 ## Stors the runtime state while preprocessing
 #
@@ -61,7 +64,6 @@ class Preprocessor():
 
     ST_KEEP_INDENTATION = 0
     ST_WRITE_LINE = 1
-    ST_INDENTATION = 2
 
     def __init__(self):
         
@@ -69,8 +71,6 @@ class Preprocessor():
         self.__runTimeState = self._createRuntimeState()
         self.__runTimeState.set(Preprocessor.ST_KEEP_INDENTATION, False )
 
-        # Stores the current indentation
-        self.__runTimeState.set(Preprocessor.ST_INDENTATION, "" )
 
         # Defines if the line of the input file
         # is written to the output file.
@@ -107,11 +107,14 @@ class Preprocessor():
     ##
     #
     #
-    def main(self, inputFileName, outputFileName):
-        
-        # absolute path for the input file.
-        #outputFileName = os.path.join( self.outputFolder,os.path.basename(inputFileName)+".pass1" )
-        
+    def __runFileCleaner(self, inputFileName, outputFileName):
+        cleaner = FileCleaner()
+        cleaner.main(inputFileName,outputFileName)
+
+    ##
+    #
+    #
+    def __runPreprocessor(self, inputFileName, outputFileName):
         # Creates a file object for the input file.
         with io.open(inputFileName, "r", encoding="utf-8") as inputfile:
 
@@ -119,17 +122,40 @@ class Preprocessor():
             with io.open(outputFileName, "w", encoding="utf-8") as outputfile:
 
                 # Runs the preprocessor for the input file.
-                self.__main(outputfile,inputfile)
+                self.__preprocessor(outputfile,inputfile)
+
+    ##
+    #
+    #
+    def main(self, inputFileName):
+        
+        
+        #
+        # FILECLEANER
+        #
+        outputFileName = os.path.join( self.outputFolder,os.path.basename(inputFileName)+".pass0" )
+        self.__runFileCleaner( inputFileName, outputFileName )
+
+
+        #
+        # PREPROCESSOR
+        #
+        inputFileName = outputFileName
+        outputFileName = outputFileName[:-len(".pass0")]+".pass1"
+        self.__runPreprocessor( inputFileName, outputFileName )
+
+        return outputFileName
     
     ## Processes the input file.
     #
     # 
-    def __main(self, outputStream, inputStream):
+    def __preprocessor(self, outputStream, inputStream, initialIndentation = ""):
     
-        # Read the first line
-        line = inputStream.readline()
 
-        while line:
+        while True:
+            line = inputStream.readline()
+            if line == "": break
+
             line = line.rstrip("\n")
             handler = self.__getHandler(line)
             if handler:
@@ -149,12 +175,11 @@ class Preprocessor():
                 # we write it in the output file.
                 if self.__runTimeState.get(Preprocessor.ST_WRITE_LINE):
                     line = self.__symbolTable.replaceSymbols(line)
-                    line = self.__runTimeState.get(Preprocessor.ST_INDENTATION)+line
+                    line = initialIndentation + line
                     line += "\n"
                     outputStream.write(line)
             
-            # Read next line.
-            line = inputStream.readline()
+            
 
     ## Returns the handler to the pp directive in line.
     #
@@ -198,24 +223,20 @@ class Preprocessor():
     def __getIndentation(self, line):
         if not self.__runTimeState.get(Preprocessor.ST_KEEP_INDENTATION):
             return ""
-        
-        pos = line.find("#")
-        return line[:pos]
+        return line[0:len(line)-len(line.lstrip())]
     
     ## Handles #include
     #
     #
     def __handleInclude(self, outputStream, line  ):
     
+        #
+        # Store indentation of incluse statement.
+        #
+        initialIndentation = self.__getIndentation(line)
+
         line = line.lstrip()
         self.__runTimeState.push()
-
-        #
-        # We add the indentation of the include statement
-        # So the included file stays at the column of the include statement.
-        #
-        if self.__runTimeState.get(Preprocessor.ST_KEEP_INDENTATION):
-            self.__runTimeState.set(Preprocessor.ST_INDENTATION, self.__runTimeState.get(Preprocessor.ST_INDENTATION)+self.__getIndentation(line) )
 
         #
         # We read the name of the file to include.
@@ -230,17 +251,22 @@ class Preprocessor():
             pathIncludeFile = os.path.join(f,parameters[0])
             if os.path.isfile( pathIncludeFile ):
             
+                #
+                # Proprocessor for included File
+                #
+                pathIncludeFile = self.main(pathIncludeFile)
+
                 # We found it so we include it.
                 # we open the include file
-                with io.open(pathIncludeFile, "r", encoding="utf-8") as includefile:
+                with io.open(pathIncludeFile, "r", encoding="utf-8") as includeStream:
                     # We need indentation as parameter, because it could be changed
                     # in the includes file.
-                    self.__main(outputStream, includefile)
+                    self.__preprocessor(outputStream, includeStream, initialIndentation)
                 
                 # At the end we need to write a line break
                 # Because there is a linebreak at the end of
                 # include directive.
-                outputStream.write( "\n" )
+                #outputStream.write( "\n" )
 
         self.__runTimeState.pop()
 

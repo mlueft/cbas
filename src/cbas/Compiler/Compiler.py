@@ -70,14 +70,16 @@ class Compiler():
         cbas.log("============================================", "debug")
         self.__lexer.config = self.__config.getLexerConfig()
         self.__lexer.tokenizeFile(inputFile)
+        return self.__lexer.firstToken
 
     def __runTokenChainOptimizer(self, lex):
         cbas.log("", "debug")
         cbas.log("chainoptimizing ...", "debug")
         cbas.log("============================================", "debug")
         config = self.__config.getTokenChainOptimizerConfig()
-        for o in config.passes:
-            o["instance"].main(lex)
+        for o in config.tokens:
+            o["instance"].main(lex,o)
+        return self.__lexer.getTokenList()
 
     def __runParser(self,tokenList):
         cbas.log("", "debug")
@@ -184,14 +186,12 @@ class Compiler():
         #
         # LEXER
         #
-        self.__runLexer(inputFile)
+        firstToken = self.__runLexer(inputFile)
 
         #
         # TokenchainOptimizer
         #
-        self.__runTokenChainOptimizer(self.__lexer.firstToken)
-
-        tokenList = self.__lexer.getTokenList()
+        tokenList = self.__runTokenChainOptimizer(firstToken)
 
         #
         # PARSER

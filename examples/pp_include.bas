@@ -1,5 +1,5 @@
-#define             A           4
-#pragma         keepindentation             true
+#define         A       4
+#pragma             keepindentation          true
 >>>>>>>>>>>>>>>>> pp_include.bas
 A or B
 a||B

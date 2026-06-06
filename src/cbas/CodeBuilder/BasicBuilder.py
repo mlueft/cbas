@@ -905,10 +905,8 @@ class BasicBuilder():
         
         elif node.tag == "boolean":
             if node.value:
-                #line = "0"
                 line = self.tokenizer.tokenize(TokenTypes.TRUE)
             else:
-                #line = "-1"
                 line = self.tokenizer.tokenize(TokenTypes.FALSE)
 
         else:

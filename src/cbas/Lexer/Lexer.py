@@ -1,11 +1,13 @@
-import cbas
 import re
 
+import cbas
 import cbas.Lexer.Tokens
 import cbas.Lexer.TokenTypes
+import cbas.Exceptions.Exceptions
 
 TokenTypes = cbas.Lexer.TokenTypes.TokenTypes
 ChainToken = cbas.Lexer.Tokens.ChainToken
+SyntaxErrorException = cbas.Exceptions.Exceptions.SyntaxErrorException
 
 class Lexer():
 
@@ -55,8 +57,33 @@ class Lexer():
             token = token.next
         return result
     
-    ##
+    ## The idea of this function is to remove all colons
+    #  so the parser doesn't have to care about
+    #  
+    #  This works:
+    #  print"a":print"b" =>
     #
+    #  {
+    #     print "a"
+    #     print "b"
+    #  }
+    #
+    #  Not yet implemented!!
+    #
+    #  if a=3 then print "a":print "b" =>
+    #
+    #  if a=3 then{ print "a":print "b"}
+    #   print "a"
+    #   print "b"
+    #  }
+    #
+    #
+    #  for i = 0 to 10 print "a":print"b": next i =>
+    #  for i = 0 to 10{
+    #      print "a"
+    #      print "b"
+    #      next i
+    #  }
     #
     def __seperateLines(self, line):
         return [line]
@@ -79,9 +106,9 @@ class Lexer():
 
         parts.append(partLine) 
 
-        #if len(parts) > 1:
-        #    parts.insert(0, "{")
-        #    parts.append("}")
+        if len(parts) > 1:
+            parts.insert(0, "{")
+            parts.append("}")
 
         return parts
 
@@ -94,17 +121,16 @@ class Lexer():
 
         with open(file, "r", encoding='utf8') as source:
             
-            line = source.readline()
-            while line:
-                line = line.strip("\n")
-
-                parts = self.__seperateLines(line)
-
-                for l in parts:
-                    Tokenizer.tokenizeLine(self,l)
-
-                cbas.log("", "debug")
+            while True:
                 line = source.readline()
+                if line == "": break
+
+                partLines = self.__seperateLines(line)
+
+                for partLine in partLines:
+                    partLine = partLine.strip("\n")
+                    Tokenizer.tokenizeLine(self,partLine)
+                
                 self.line += 1
             
             if self.config.markEOF:
@@ -160,8 +186,7 @@ class Lexer():
 
 
 class Tokenizer():
-
-           
+ 
     ##
     #
     #
@@ -169,7 +194,6 @@ class Tokenizer():
     def createUniqueToken(lexer,type=0, pos=0):
         return ChainToken("",lexer.line+1,lexer.pos+1,type)
     
-
     ##
     #
     #
@@ -207,20 +231,19 @@ class Tokenizer():
                 # Here we have reached a code that we can't parse.
                 # So we skip the rest of the line.
                 if lexer.pos < len(line):
-                    raise ValueError( "Syntax error @ {}:{}".format(lexer.line, lexer.pos) )
+                    raise SyntaxErrorException( line, lexer.line, lexer.pos )
 
                 break
 
         # End of line reached
         lexer.mode = Lexer.MODE_ASSIGNMENT
         
-        if True and lexer.config.markLineend:
+        if lexer.config.markLineend:
             token = Tokenizer.createUniqueToken(lexer,TokenTypes.LINEEND, lexer.pos)
             lexer.appendToken(token)
 
         return 0
 
- 
     ##
     #
     #
@@ -233,7 +256,6 @@ class Tokenizer():
         match = pattern.match(line,lexer.pos)
         if match:
       
-      
             posOld = lexer.pos
             handler = lexer.getHandler(token)
             token = handler(lexer,match,token)
@@ -242,37 +264,49 @@ class Tokenizer():
             if token is not None:
                 
                 if token.type in [ TokenTypes.ASSIGNMENT, TokenTypes.EQ]:
+                    #
                     # We assume the first = is an assgnment, all following are EQ
+                    #
                     if lexer.mode == Lexer.MODE_ASSIGNMENT and lexer.config.hasTokenType(TokenTypes.ASSIGNMENT):
                         token.type = TokenTypes.ASSIGNMENT
                         lexer.mode = Lexer.MODE_EQ
                     else:
                         token.type = TokenTypes.EQ
                 
+                #
                 # Between "if" and "then" we are in mode 1
                 # Between "FOR" and "TO" we are in mode 1
+                #
                 if token.type in [TokenTypes.IF,TokenTypes.FOR]:
                     lexer.mode = Lexer.MODE_EQ
 
+                #
                 # End of command reached.
+                #
                 if token.type in [TokenTypes.COLON, TokenTypes.THEN, TokenTypes.TO]:
                     lexer.mode = Lexer.MODE_ASSIGNMENT
 
+                #
+                # Add token to list.
+                #
                 lexer.appendToken(token)
+
+
                 cbas.log(((" "*posOld)+"'{}' - ({})").format(match[0],TokenTypes.toString(token.type)),"debug")
             
             return True
         
         return False
 
-    ##
+
+    ## Ignors the found match.
     #
     #
     @staticmethod
     def ignoreHandler(lexer,match,expression):
         lexer.pos = match.end()
 
-    ##
+    ## Creates a string token and adds it to the list
     #
     #
     @staticmethod
@@ -281,7 +315,7 @@ class Tokenizer():
         lexer.pos = match.end()
         return result
 
-    ##
+    ## Create a token and adds it to the list
     #
     #
     @staticmethod
@@ -290,24 +324,31 @@ class Tokenizer():
         lexer.pos = match.end()
         return result
 
-    ##
+    ## Adds a variable to the symbol table.
     #
     #
     @staticmethod
     def identifierHandler(lexer,match,expression):
+        
+        # Variable name
         symbolName = match[0]
+        
         line = lexer.line
         pos = lexer.pos
-        type = "float"
 
+        # Type
+        type = "float"
         if symbolName[-1:] == "%":
             type = "integer"
         elif symbolName[-1:] == "$":
             type = "string"
 
+        # Add symbol to table
         symbolId = cbas.symbolTable.addSymbol(type,symbolName,line,pos)
         
+        # Create token for variable
         result = ChainToken(symbolId,lexer.line,lexer.pos,expression.type)
-        #result = Tokenizer.createToken(lexer,match,expression)
+        
         lexer.pos = match.end()
+
         return result

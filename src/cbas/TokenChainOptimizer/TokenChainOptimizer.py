@@ -16,7 +16,7 @@ class TokenDebugger(TokenChainOptimizer):
     def __init__(self):
         super().__init__()
 
-    def main(self, token):
+    def main(self, token, o):
         while token:
             self.printToken(token)
             token = token.next
@@ -47,10 +47,10 @@ class TokenDebugger(TokenChainOptimizer):
 
 class TokenRemover(TokenChainOptimizer):
 
-    def __init__(self,tokensToRemove):
+    def __init__(self,tokensToRemove=None):
         self.removeTypes = tokensToRemove
 
-    def main(self, token):
+    def main(self, token, o):
         while token:
             if token.type in self.removeTypes:
                 print("remove {}".format(token.type) )

@@ -12,3 +12,30 @@ class BindingPower():
     CALL           =  8
     MEMBER         =  9
     PRIMARY        = 10
+
+    __matchTable = {
+        "default":        DEFAULT,
+        "comma":          COMMA,
+        "assignment":     ASSIGNMENT,
+        "logical":        LOGICAL,
+        "relational":     RELATIONAL,
+        "additive":       ADDITIVE,
+        "multiplicative": MULTIPLICATIVE,
+        "unary":          UNARY,
+        "call":           CALL,
+        "member":         MEMBER,
+        "primary":        PRIMARY,
+    }
+    
+    @staticmethod
+    def toType(value):
+        if value in BindingPower.__matchTable:
+            return BindingPower.__matchTable[value]
+        raise ValueError("BindingPower '{}' not recognized!".format(value))
+
+    @staticmethod
+    def toString(value):
+        for e in BindingPower.__matchTable:
+            if BindingPower.__matchTable[e] == value:
+                return e
+        #raise ValueError("BindingPower'{}' not recognized!".format(value))

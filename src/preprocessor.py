@@ -1,10 +1,10 @@
 import getopt, sys, os, shutil
 
 import cbas.Preprocessor.Preprocessor
-import cbas.Preprocessor.FileCleaner
+
 
 Preprocessor = cbas.Preprocessor.Preprocessor.Preprocessor
-FileCleaner = cbas.Preprocessor.FileCleaner.FileCleaner
+
 
 # -s Source file to process.
 # -o Output folder. Processed files are stored in this folder.
@@ -23,21 +23,14 @@ def showHelp():
     print( "" )
     
 
-##
-#
-#
-def runFileCleaner(inputFile,outputFile):
-    cleaner = FileCleaner()
-    cleaner.main(inputFile,outputFile)
-
 ## Runs the preprocessor for the input file.
 #
 #
-def runPreProcessor(inputFile, outputFile, outputFolder, libFolders):
+def runPreProcessor(inputFile, outputFolder, libFolders):
     preprocessor = Preprocessor()
     preprocessor.outputFolder = outputFolder
     preprocessor.libFolders = libFolders
-    preprocessor.main(inputFile, outputFile)
+    return preprocessor.main(inputFile)
 
 ##
 #
@@ -51,7 +44,7 @@ def main():
     # Debug parameters    
     inputFile    = r"./examples/testapp.bas"
     #inputFile    = r"./examples/basic_V2.bas"
-    inputFile    = r"./examples/pp_include.bas"
+    #inputFile    = r"./examples/pp_include.bas"
     outputFolder = r"./obj"
     libFolders   = [
         r"./lib"
@@ -97,23 +90,11 @@ def main():
     except FileExistsError:
         pass
     
-    
-    # absolute path for the input file.
-    outputFile = os.path.join( outputFolder,os.path.basename(inputFile)+".pass0" )
-
-    #
-    # File Cleanup
-    #
-    runFileCleaner(inputFile, outputFile)
-
-
-    inputFile  = outputFile
-    outputFile = outputFile[:-len(".pass0")]+".pass1"
 
     #
     # Run preprocessor
     #
-    runPreProcessor( inputFile, outputFile, outputFolder, libFolders )
+    outputFile = runPreProcessor( inputFile, outputFolder, libFolders )
     
     #
     # We need the processed file to have the exact same name as the original one.

@@ -53,18 +53,17 @@ class FileCleaner():
     #
     #
     def cleanWhiteSpaces(self, lines):
+        #return lines
         result = []
         for line in lines:
 
             #
             # We store the initial indentation
+            # and remove strip the line
             #
-            tmp = line.rstrip()
-            initialIndentation = " "*( len(tmp)-len(tmp.lstrip()) )
-            
-            
-            
+            initialIndentation = line[0:len(line)-len(line.lstrip())]
             line = line.lstrip()
+
             # Seperate code parts and strings
             # We have to break up the line into a list
             # of code and string literals.
