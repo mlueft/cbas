@@ -207,7 +207,7 @@ class StatementParser():
 
         while parser.currentTokenType not in [TokenTypes.LINEEND,TokenTypes.COLON,TokenTypes.EOF, TokenTypes.LINENUMBER]:
             if parser.currentTokenType == TokenTypes.COMMA:
-                t=PrimaryExpression( "None", None, None )
+                t=PrimaryExpression( None, None )
                 parameters.append(t)
                 #parser.advance()
             else:
@@ -218,7 +218,7 @@ class StatementParser():
             parser.advance(TokenTypes.COMMA)
         
         if parser.lastTokenType == TokenTypes.COMMA:
-            t=PrimaryExpression( "None", None, None )
+            t=PrimaryExpression( None, None )
             parameters.append(t)
             parser.advance()
 
@@ -262,7 +262,7 @@ class StatementParser():
 
         # Update Symboltable
         symbol = cbas.symbolTable.getSymbol(functionName.value)
-        symbol.type = "function"
+        symbol.kind = "function"
         symbol.parameters = len(parameters)
 
         result = FunctionDefinitionStatement(functionName,parameters,body)

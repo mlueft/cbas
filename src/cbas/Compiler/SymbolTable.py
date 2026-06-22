@@ -1,12 +1,25 @@
 
 class SymbolKind():
     
-    VARIABLE = 0
-    LITERAL  = 1
+    VARIABLE_FLOAT     = 0
+    VARIABLE_STRING    = 1
+    VARIABLE_INTEGER   = 2
+
+    LITERAL_STRING     = 3
+    LITERAL_FLOAT      = 4
+    LITERAL_INTEGER    = 5
+    LITERAL_SCIENTIFIC = 6
+    LITERAL_BOOLEAN    = 7
 
     __matchTable = {
-        "variable":   VARIABLE,
-        "literal":     LITERAL
+        "variable string":    VARIABLE_STRING,
+        "variable float":     VARIABLE_FLOAT,
+        "variable integer":   VARIABLE_INTEGER,
+        "literal string":     LITERAL_STRING,
+        "literal float":      LITERAL_FLOAT,
+        "literal integer":    LITERAL_INTEGER,
+        "literal scientific": LITERAL_SCIENTIFIC,
+        "literal boolean":    LITERAL_BOOLEAN
     }
 
     @staticmethod
@@ -29,21 +42,24 @@ class Symbol():
 
     def __init__(self):
 
-        # 0 = variable
-        # 1 = literal
+        # ENUM SymbolKind
         self.kind = None
-        # ["float","integer","string"]
-        self.type = None
+
         # The code represented by the symbol.
         # Its a literal or a variable.
         self.code = None
+
         # line and pos tuple of declaration
         self.declaration = None
+
         # list of line and pos tuples of usage
         self.usages = []
+
         # Name of the variable in generated basic code.
         self.variableName = None
+
         # placeholder
+        # the symbolId
         self.placeholder = ""
 
     @property
@@ -51,13 +67,29 @@ class Symbol():
         if self.parameters is None:
             return False
         return True
+
+    def isLiteral(self):
+        return self.kind in [
+            SymbolKind.LITERAL_BOOLEAN, SymbolKind.LITERAL_FLOAT,
+            SymbolKind.LITERAL_INTEGER, SymbolKind.LITERAL_SCIENTIFIC,
+            SymbolKind.LITERAL_STRING
+        ]
+    
+    def isVariable(self):
+        return self.kind in [
+            SymbolKind.VARIABLE_FLOAT, SymbolKind.VARIABLE_STRING,
+            SymbolKind.VARIABLE_INTEGER
+        ]
     
     def __str__(self):
-        result = "{} {} {}\n ".format(self.type, self.code, self.declaration)
+        result = "{} {} {}\n ".format(self.kind, self.code, self.declaration)
         for i in self.usages:
             result += "({}:{})".format(i[0],i[1])
         return result
 
+##
+#
+#
 class SymbolTable():
 
     __ID = 0
@@ -123,8 +155,8 @@ class SymbolTable():
         if not self.buildGlobals:
             return False
         
-        if (len(symbol.usages) >= 1 and symbol.type != "string") or \
-            (len(symbol.name) > 4 and len(symbol.usages) >= 1 and symbol.type == "string"):
+        if (len(symbol.usages) >= 1 and symbol.kind != SymbolKind.LITERAL_STRING) or \
+            (len(symbol.name) > 4 and len(symbol.usages) >= 1 and symbol.kind == SymbolKind.LITERAL_STRING):
             return True
         return False
     
@@ -135,7 +167,7 @@ class SymbolTable():
         result = []
 
         for k,symbol in self.__symbols.items():
-            if symbol.kind == SymbolKind.LITERAL:
+            if symbol.isLiteral():
                 if self.__isGlobal(symbol):
                     result.append(symbol)
 
@@ -148,7 +180,7 @@ class SymbolTable():
         result = []
 
         for k,symbol in self.__symbols.items():
-            if symbol.kind == SymbolKind.LITERAL:
+            if symbol.isLiteral():
                 if not self.__isGlobal(symbol):
                     result.append(symbol)
 
@@ -157,9 +189,9 @@ class SymbolTable():
     ## Adds a symbol to the table and returns the unique ID.
     #
     #
-    def addSymbol(self, type, name, line = None, pos = None, kind = 0):
+    def addSymbol(self, code, line = None, pos = None, kind = 0):
         
-        id = self.getId(name)
+        id = self.getId(code)
         if id:
             symbol = self.__symbols[id]
             symbol.usages.append((line,pos))
@@ -169,8 +201,7 @@ class SymbolTable():
 
         symbol = Symbol()
         symbol.kind = kind
-        symbol.type = type
-        symbol.code = name
+        symbol.code = code
         symbol.declaration = (line,pos)
         symbol.placeholder = id
 
@@ -215,9 +246,9 @@ class SymbolTable():
         # Generate the next free variable name.
         #
         suffix = ""
-        if symbol.type == "string":
+        if symbol.kind == SymbolKind.VARIABLE_STRING:
             suffix = "$"
-        elif symbol.type == "integer":
+        elif symbol.kind == SymbolKind.VARIABLE_INTEGER:
             suffix = "%"
         
         vnames0 = ["a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z"]

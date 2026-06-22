@@ -63,12 +63,16 @@ class ArithmeticOptimizer(AstOptimizer):
             if type(expr) is PrimaryExpression:
                 # if expr is a primary
                 # prefix gets applies to its value.
-                if expr.tag in ["integer","float"]:
-                    left = float(expr.value)
-                    if expr.tag == "integer":
-                        left = int(expr.value)
+                
+                symbol = cbas.symbolTable.getSymbol(expr.code)
+
+                if symbol.kind in [SymbolKind.LITERAL_INTEGER,SymbolKind.LITERAL_FLOAT]:
+                    left = float(symbol.code)
+                    if symbol.kind == SymbolKind.LITERAL_INTEGER:
+                        left = int(symbol.code)
                     left = -left
-                    expr.value = left
+                    #expr.value = left
+                    symbol.code = left
                     return expr
     
         return node
@@ -87,13 +91,13 @@ class ArithmeticOptimizer(AstOptimizer):
                 if type(expr.left) in [BinaryExpression,PrimaryExpression]:
                     # if left is a BinrayExpression
                     # prefix gets a prefix of this BinaryExpression
-                    expr.left.replace( PrefixExpression(PrimaryExpression("op",op),expr.left) )
+                    expr.left.replace( PrefixExpression(PrimaryExpression(op),expr.left) )
                     return expr
                 
                 elif type(expr.left) is GroupingExpression:
                     # if left is a grouping
                     # the prefixs gets to the expression in the grouping
-                    expr.left.replace( PrefixExpression(PrimaryExpression("op",op),expr.left.value) )
+                    expr.left.replace( PrefixExpression(PrimaryExpression(op),expr.left.value) )
                     return expr
         return node
         
@@ -127,18 +131,18 @@ class ArithmeticOptimizer(AstOptimizer):
         if type(node.right) is not PrimaryExpression:
             return node
 
-        if node.left.tag not in [ "integer", "float"]:
-            return node
-        
-        if node.right.tag not in [ "integer", "float"]:
-            return node
-        
         if node.operator.value not in [ "+","-","*","/"]:
             return node
 
         symbolLeft = cbas.symbolTable.getSymbol(node.left.value)
         symbolRight = cbas.symbolTable.getSymbol(node.right.value)
 
+        if symbolLeft.kind not in [SymbolKind.LITERAL_INTEGER,SymbolKind.LITERAL_FLOAT]:
+            return node
+        
+        if symbolRight.kind not in [SymbolKind.LITERAL_INTEGER,SymbolKind.LITERAL_FLOAT]:
+            return node
+        
         lv = float(symbolLeft.code)
         rv = float(symbolRight.code)
         op = node.operator.value
@@ -152,18 +156,20 @@ class ArithmeticOptimizer(AstOptimizer):
         # New type is float if one of the operants is float
         #
         newType = "integer"
-        if node.left.tag == "float" or node.right.tag == "float":
+        newKind = SymbolKind.LITERAL_INTEGER
+        if symbolLeft.kind == SymbolKind.LITERAL_FLOAT or symbolRight.kind == SymbolKind.LITERAL_FLOAT:
             newType = "float"
+            newKind = SymbolKind.LITERAL_FLOAT
 
         #
         # We store the result in the symbol table
         #
-        symbolId = cbas.symbolTable.addSymbol(newType,newLiteral,None,None,SymbolKind.LITERAL)
+        symbolId = cbas.symbolTable.addSymbol(newLiteral,None,None,newKind)
 
         if newType == "float":
-            replacement = PrimaryExpression(newType,symbolId, ChainToken(symbolId,None,None,TokenTypes.FLOAT ) )
+            replacement = PrimaryExpression(symbolId, ChainToken(symbolId,None,None,TokenTypes.FLOAT ) )
         else:
-            replacement = PrimaryExpression(newType,symbolId, ChainToken(symbolId,None,None,TokenTypes.INTEGER ) )
+            replacement = PrimaryExpression(symbolId, ChainToken(symbolId,None,None,TokenTypes.INTEGER ) )
 
         return replacement
 
@@ -192,24 +198,25 @@ class StringOptimizer(AstOptimizer):
         if type(node.right) is not PrimaryExpression:
             return node
         
-        if node.left.tag not in [ "integer", "string"]:
-            return node
-        
-        if node.right.tag not in [ "integer", "string"]:
-            return node
-        
         if node.operator.value not in [ "*", "+" ]:
             return node
                 
         symbolLeft = cbas.symbolTable.getSymbol(node.left.value)
         symbolRight = cbas.symbolTable.getSymbol(node.right.value)
 
-        if symbolLeft.type == "integer":
+        if symbolLeft.kind not in [SymbolKind.LITERAL_INTEGER,SymbolKind.LITERAL_STRING]:
+            return node
+        
+        if symbolRight.kind not in [SymbolKind.LITERAL_INTEGER,SymbolKind.LITERAL_STRING]:
+            return node
+        
+
+        if symbolLeft.kind == SymbolKind.LITERAL_INTEGER:
             lv = int(symbolLeft.code)
         else:
             lv = symbolLeft.code[1:-1]
 
-        if symbolRight.type == "integer":
+        if symbolRight.kind == SymbolKind.LITERAL_INTEGER:
             rv = int(symbolRight.code)
         else:
             # literals are stored in symbol table
@@ -225,13 +232,11 @@ class StringOptimizer(AstOptimizer):
         #
         # We store the result in the symbol table
         #
-        symbolId = cbas.symbolTable.addSymbol("string",'"{}"'.format(newLiteral),None,None,SymbolKind.LITERAL)
+        symbolId = cbas.symbolTable.addSymbol('"{}"'.format(newLiteral),None,None,SymbolKind.LITERAL_STRING)
 
     
-        replacement = PrimaryExpression("string",symbolId,ChainToken(str(newLiteral),None,None,TokenTypes.STRING ))
+        replacement = PrimaryExpression(symbolId,ChainToken(str(newLiteral),None,None,TokenTypes.STRING ))
 
-        #print( "{}{}{} => {}".format(lv,op,rv,r) )
-        return replacement
         return replacement
 
 class LogicOptimizer(AstOptimizer):
@@ -259,24 +264,24 @@ class LogicOptimizer(AstOptimizer):
         if type(node.right) is not PrimaryExpression:
             return node
 
-        if node.left.tag not in [ "integer", "float", "boolean"]:
-            return node
-        
-        if node.right.tag not in [ "integer", "float", "boolean"]:
-            return node
-        
         if node.operator.value not in [ "=","<",">","<=",">=","<>" ]:
             return node
 
         symbolLeft = cbas.symbolTable.getSymbol(node.left.value)
         symbolRight = cbas.symbolTable.getSymbol(node.right.value)
 
-        if symbolLeft.type == "boolean":
+        if symbolLeft.kind not in [SymbolKind.LITERAL_INTEGER,SymbolKind.LITERAL_FLOAT,SymbolKind.LITERAL_BOOLEAN]:
+            return node
+        
+        if symbolRight.kind not in [SymbolKind.LITERAL_INTEGER,SymbolKind.LITERAL_FLOAT,SymbolKind.LITERAL_BOOLEAN]:
+            return node
+        
+        if symbolLeft.kind == SymbolKind.LITERAL_BOOLEAN:
             lv = symbolLeft.code
         else:
             lv = float(symbolLeft.code)
 
-        if symbolRight.type == "boolean":
+        if symbolRight.kind == SymbolKind.LITERAL_BOOLEAN:
             rv = symbolRight.code
         else:
             rv = float(symbolRight.code)
@@ -291,16 +296,16 @@ class LogicOptimizer(AstOptimizer):
         elif op == "<>": newLiteral = lv!=rv
         
         if newLiteral:
-            newLiteral = "{true}"
+            newLiteral = "1"
         else:
-            newLiteral = "{false}"
+            newLiteral = "0"
 
         #
         # We store the result in the symbol table
         #
-        symbolId = cbas.symbolTable.addSymbol("boolean",newLiteral,None,None,SymbolKind.LITERAL)
+        symbolId = cbas.symbolTable.addSymbol(newLiteral,None,None,SymbolKind.LITERAL_BOOLEAN)
 
-        replacement = PrimaryExpression("boolean",symbolId, ChainToken(symbolId,None,None,TokenTypes.BOOLEAN ) )
+        replacement = PrimaryExpression(symbolId, ChainToken(symbolId,None,None,TokenTypes.BOOLEAN ) )
 
         return replacement
 

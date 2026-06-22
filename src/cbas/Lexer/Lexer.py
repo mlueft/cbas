@@ -314,13 +314,12 @@ class Tokenizer():
     @staticmethod
     def stringHandler(lexer,match,expression):
 
-        literal = match[0]
+        code = match[0]
         line = lexer.line
         pos = lexer.pos
-        type = "string"
 
         # Add symbol to table
-        symbolId = cbas.symbolTable.addSymbol(type,literal,line,pos,SymbolKind.LITERAL)
+        symbolId = cbas.symbolTable.addSymbol(code,line,pos,SymbolKind.LITERAL_STRING)
         
         # Create token for variable
         result = ChainToken(symbolId,line,pos,expression.type)
@@ -339,13 +338,12 @@ class Tokenizer():
         #lexer.pos = match.end()
         #return result
         
-        literal = match[0]
+        code = match[0]
         line = lexer.line
         pos = lexer.pos
-        type = "scientific"
 
         # Add symbol to table
-        symbolId = cbas.symbolTable.addSymbol(type,literal,line,pos,SymbolKind.LITERAL)
+        symbolId = cbas.symbolTable.addSymbol(code,line,pos,SymbolKind.LITERAL_SCIENTIFIC)
         
         # Create token for variable
         result = ChainToken(symbolId,line,pos,expression.type)
@@ -364,13 +362,12 @@ class Tokenizer():
         #result = Tokenizer.createToken(lexer,match,expression)
         #lexer.pos = match.end()
         #return result
-        literal = match[0]
+        code = match[0]
         line = lexer.line
         pos = lexer.pos
-        type = "float"
 
         # Add symbol to table
-        symbolId = cbas.symbolTable.addSymbol(type,literal,line,pos,SymbolKind.LITERAL)
+        symbolId = cbas.symbolTable.addSymbol(code,line,pos,SymbolKind.LITERAL_FLOAT)
         
         # Create token for variable
         result = ChainToken(symbolId,line,pos,expression.type)
@@ -387,13 +384,12 @@ class Tokenizer():
         #result = Tokenizer.createToken(lexer,match,expression)
         #lexer.pos = match.end()
         #return result
-        literal = match[0]
+        code = match[0]
         line = lexer.line
         pos = lexer.pos
-        type = "integer"
 
         # Add symbol to table
-        symbolId = cbas.symbolTable.addSymbol(type,literal,line,pos,SymbolKind.LITERAL)
+        symbolId = cbas.symbolTable.addSymbol(code,line,pos,SymbolKind.LITERAL_INTEGER)
         
         # Create token for variable
         result = ChainToken(symbolId,line,pos,expression.type)
@@ -410,13 +406,12 @@ class Tokenizer():
         #result = Tokenizer.createToken(lexer,match,expression)
         #lexer.pos = match.end()
         #return result
-        literal = match[0]
+        code = match[0]
         line = lexer.line
         pos = lexer.pos
-        type = "boolean"
 
         # Add symbol to table
-        symbolId = cbas.symbolTable.addSymbol(type,literal,line,pos,SymbolKind.LITERAL)
+        symbolId = cbas.symbolTable.addSymbol(code,line,pos,SymbolKind.LITERAL_BOOLEAN)
         
         # Create token for variable
         result = ChainToken(symbolId,line,pos,expression.type)
@@ -441,20 +436,20 @@ class Tokenizer():
     def identifierHandler(lexer,match,expression):
         
         # Variable name
-        symbolName = match[0]
+        code = match[0]
         
         line = lexer.line
         pos = lexer.pos
 
         # Type
-        type = "float"
-        if symbolName[-1:] == "%":
-            type = "integer"
-        elif symbolName[-1:] == "$":
-            type = "string"
+        kind = SymbolKind.VARIABLE_FLOAT
+        if code[-1:] == "%":
+            kind = SymbolKind.VARIABLE_INTEGER
+        elif code[-1:] == "$":
+            kind = SymbolKind.VARIABLE_STRING
 
         # Add symbol to table
-        symbolId = cbas.symbolTable.addSymbol(type,symbolName,line,pos,SymbolKind.VARIABLE)
+        symbolId = cbas.symbolTable.addSymbol(code,line,pos,kind)
         
         # Create token for variable
         result = ChainToken(symbolId,line,pos,expression.type)

@@ -6,6 +6,7 @@ import cbas.Ast.Expressions
 import cbas.Ast.Statements
 import cbas.Lexer.TokenTypes
 import cbas.CodeBuilder.Tokenizer
+import cbas.Compiler.SymbolTable
 
 TraverseMode = cbas.DataStructures.TraverseMode.TraverseMode
 TokenTypes = cbas.Lexer.TokenTypes.TokenTypes
@@ -28,6 +29,7 @@ PrefixExpression = cbas.Ast.Expressions.PrefixExpression
 BinaryExpression = cbas.Ast.Expressions.BinaryExpression
 PrimaryExpression = cbas.Ast.Expressions.PrimaryExpression
 Tokenizer = cbas.CodeBuilder.Tokenizer.Tokenizer
+SymbolKind = cbas.Compiler.SymbolTable.SymbolKind
 
 class BasicBuilder():
 
@@ -128,14 +130,17 @@ class BasicBuilder():
                 if bytes(l.placeholder,"ascii") == match:
 
                     _type = TokenTypes.STRING
-                    if l.type == "integer":
+                    data = l.code
+                    if l.kind == SymbolKind.LITERAL_INTEGER:
                         _type = TokenTypes.INTEGER
-                    elif l.type == "float":
+                        data = int(data)
+                    elif l.kind == SymbolKind.LITERAL_FLOAT:
                         _type = TokenTypes.FLOAT
-                    elif l.type == "boolean":
+                        data = float(data)
+                    elif l.kind == SymbolKind.LITERAL_BOOLEAN:
                         _type = TokenTypes.BOOLEAN
                                             
-                    a = self.tokenizer.tokenize(_type, l.code)
+                    a = self.tokenizer.tokenize(_type, data)
                     result = result.replace( match,a)
 
             #
@@ -206,77 +211,6 @@ class BasicBuilder():
         result = []
         for line in codeLines:
             if line != b"{" and line != b"}":
-                result.append(line)
-
-        return result
-    
-        for line in codeLines:
-
-            # Seperate code parts and strings
-            # We have to break up the line into a list
-            # of code and string literals.
-            #
-            parts = []
-            pos = 0
-            partLine = bytearray()
-            while pos < len(line):
-                c = line[pos]
-                
-                if c == b'"'[0]:
-
-                    parts.append(partLine)
-                    partLine = bytearray()
-
-                    # a string starts
-                    partLine += c.to_bytes(length=1, byteorder='big')
-
-                    # we read till the end of the string
-                    while pos < len(line)-1:
-                        pos += 1
-                        c = line[pos]
-                        if c != b'"'[0]:
-                            partLine += c.to_bytes(length=1, byteorder='big')
-                        else:
-                            # end of string reached
-                            partLine += c.to_bytes(length=1, byteorder='big')
-                            parts.append(partLine)
-                            partLine = bytearray()
-                            break
-
-                else:
-                    partLine += c.to_bytes(length=1, byteorder='big')
-
-                pos += 1
-
-            parts.append(partLine)
-
-
-            #
-            # Remove empty parts
-            #
-            tmp1 = []
-            for p in parts:
-                if len(p)>0:
-                    tmp1.append(p)
-            parts=tmp1
-
-
-            #
-            # Remove SCOPE definitions
-            #
-            isScope=False
-            pattern = re.compile(b"\{.*\}")
-            i=0
-            while i < len(parts):
-                part=parts[i]
-                if part[0] != b'"'[0]:
-                    matches = pattern.findall(part)
-                    if matches:
-                        isScope=True
-
-                i+=1
-
-            if not isScope:
                 result.append(line)
 
         return result
@@ -360,21 +294,21 @@ class BasicBuilder():
         for symbol in globals:
             line = bytearray()
 
-            type = TokenTypes.STRING
-            if symbol.type == "integer":
-                type = TokenTypes.INTEGER
-            elif symbol.type == "float":
-                type = TokenTypes.FLOAT
-            elif symbol.type == "boolean":
-                type = TokenTypes.BOOLEAN
+            _type = TokenTypes.STRING
+            if symbol.kind == SymbolKind.LITERAL_INTEGER:
+                _type = TokenTypes.INTEGER
+            elif symbol.kind == SymbolKind.LITERAL_FLOAT:
+                _type = TokenTypes.FLOAT
+            elif symbol.kind == SymbolKind.LITERAL_BOOLEAN:
+                _type = TokenTypes.BOOLEAN
 
             variableName = cbas.symbolTable.getVariableName(symbol.placeholder)
 
-            line = self.tokenizer.tokenize(type, symbol.placeholder)
+            line = self.tokenizer.tokenize(_type, symbol.placeholder)
 
             line += self.tokenizer.tokenize(TokenTypes.EQ)
 
-            line += self.tokenizer.tokenize(type, symbol.name)
+            line += self.tokenizer.tokenize(_type, symbol.name)
 
             result.append(line)
         
@@ -999,9 +933,6 @@ class BasicBuilder():
         if node.type == TokenTypes.LINEEND or node.type == TokenTypes.COLON:
             return None
 
-        elif node.tag == "None":
-            line = ""
-        
         else:
             line = self.tokenizer.tokenize(node.type, node.value)
 

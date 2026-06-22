@@ -73,13 +73,13 @@ class ExpressionParser():
         
         if type == TokenTypes.INTEGER:
             token = parser.advance()
-            result = PrimaryExpression( "integer", token.code, token )
+            result = PrimaryExpression( token.code, token )
             cbas.log("end:parsePrimaryExpression", "debug" )
             return result
         
         elif type == TokenTypes.FLOAT:
             token = parser.advance()
-            result = PrimaryExpression( "float", token.code, token)
+            result = PrimaryExpression( token.code, token)
             cbas.log("end:parsePrimaryExpression", "debug" )
             return result
 
@@ -92,85 +92,85 @@ class ExpressionParser():
             else:
                 exp = int(parts[1])
 
-            result = PrimaryExpression( "scientific", token.code, token)
+            result = PrimaryExpression( token.code, token)
             cbas.log("end:parsePrimaryExpression", "debug" )
             return result
 
         elif type == TokenTypes.STRING:
             token = parser.advance()
-            result = PrimaryExpression( "string", token.code, token)
+            result = PrimaryExpression( token.code, token)
             cbas.log("end:parsePrimaryExpression", "debug" )
             return result
 
         elif type == TokenTypes.BOOLEAN:
             token = parser.advance()
-            result = PrimaryExpression( "boolean", token.code.lower() == 'true', token)
+            result = PrimaryExpression( token.code.lower() == 'true', token)
             cbas.log("end:parsePrimaryExpression", "debug" )
             return result
             
         elif type == TokenTypes.IDENTIFIER:
             token = parser.advance()
-            result = PrimaryExpression( "symbol", token.code, token)
+            result = PrimaryExpression( token.code, token)
             cbas.log("end:parsePrimaryExpression", "debug" )
             return result
 
         elif type == TokenTypes.LINENUMBER:
             token = parser.advance()
-            result = PrimaryExpression( "linenumber", token.code, token)
+            result = PrimaryExpression( token.code, token)
             cbas.log("end:parsePrimaryExpression", "debug" )
             return result
         
         elif type == TokenTypes.LINEEND:
             token = parser.advance()
-            result = PrimaryExpression( "lineend", token.code, token)
+            result = PrimaryExpression( token.code, token)
             cbas.log("end:parsePrimaryExpression", "debug" )
             return result
         
         elif type == TokenTypes.COLON:
             token = parser.advance()
-            result = PrimaryExpression( "colon", token.code, token)
+            result = PrimaryExpression( token.code, token)
             cbas.log("end:parsePrimaryExpression", "debug" )
             return result
         
         elif type == TokenTypes.SEMICOLON:
             token = parser.advance()
-            result = PrimaryExpression( "semicolon", token.code, token)
+            result = PrimaryExpression( token.code, token)
             cbas.log("end:parsePrimaryExpression", "debug" )
             return result
         
         elif type == TokenTypes.COMMA:
             token = parser.advance()
-            result = PrimaryExpression( "comma", token.code, token)
+            result = PrimaryExpression( token.code, token)
             cbas.log("end:parsePrimaryExpression", "debug" )
             return result
 
         elif type == TokenTypes.LABEL:
             token = parser.advance()
-            result = PrimaryExpression( "label", token.code, token)
+            result = PrimaryExpression( token.code, token)
             cbas.log("end:parsePrimaryExpression", "debug" )
             return result
 
         elif type in [ TokenTypes.MUL, TokenTypes.DIV, TokenTypes.ADD, TokenTypes.MINUS ]:
             token = parser.advance()
-            result = PrimaryExpression( "arithmetic", token.code, token)
+            result = PrimaryExpression( token.code, token)
             cbas.log("end:parsePrimaryExpression", "debug" )
             return result
                 
         elif type in [ TokenTypes.EQ, TokenTypes.NEQ, TokenTypes.LESS, TokenTypes.MORE, TokenTypes.LE, TokenTypes.GE, TokenTypes.AND, TokenTypes.OR, TokenTypes.NOT]:
             token = parser.advance()
-            result = PrimaryExpression( "logical", token.code, token)
+            result = PrimaryExpression( token.code, token)
             cbas.log("end:parsePrimaryExpression", "debug" )
             return result
         
         elif type in parser.config.functions:
             token = parser.advance()
-            result = PrimaryExpression( "function", token.code, token)
+            result = PrimaryExpression( token.code, token)
             cbas.log("end:parsePrimaryExpression", "debug" )
             return result
         
         elif type in parser.config.statements:
             token = parser.advance()
-            result = PrimaryExpression( "statement", token.code, token)
+            result = PrimaryExpression( token.code, token)
             cbas.log("end:parsePrimaryExpression", "debug" )
             return result
         
@@ -392,9 +392,10 @@ class Expression(TreeNode):
 #
 class PrimaryExpression(Expression):
     
-    def __init__(self, tag=None, value = None, token = None):
+    #def __init__(self, tag=None, value = None, token = None):
+    def __init__(self, value = None, token = None):
         super().__init__(value)
-        self.tag = tag
+        #self.tag = tag
         self.__token = token
         self._isLeaf = True
 
@@ -430,10 +431,11 @@ class PrimaryExpression(Expression):
         return []
 
     def debug(self,level=0):
-        cbas.log( "{:<4}:{}tag:'{}' value:'{}' type:{} @{}:{}".format(self.id, " "*level*self.indentation, self.tag, self.value,  TokenTypes.toString(self.__token),self.line,self.pos), "debug" )
+        #cbas.log( "{:<4}:{}tag:'{}' value:'{}' type:{} @{}:{}".format(self.id, " "*level*self.indentation, self.tag, self.value,  TokenTypes.toString(self.__token),self.line,self.pos), "debug" )
+        cbas.log( "{:<4}:{} value:'{}' type:{} @{}:{}".format(self.id, " "*level*self.indentation, self.value,  TokenTypes.toString(self.__token),self.line,self.pos), "debug" )
 
     def __str__(self):
-        return "{:<4} {}".format( self.tag, self.value)
+        return "{}".format( self.value)
     
     def outline(self, handler):
         handler(self,TraverseMode.OUTLINE)

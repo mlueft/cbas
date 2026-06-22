@@ -199,10 +199,7 @@ class Tokenizer():
             TokenTypes.COLON:            [ [b":"      ], [58]                ],
             TokenTypes.ROUNDOPEN:        [ [b"("      ], [40]                ],
             TokenTypes.ROUNDCLOSE:       [ [b")"      ], [41]                ],
-            TokenTypes.PISIGN:           [ [b"{pi}"   ], [255]               ],
-            TokenTypes.TRUE:             [ [b"1"      ], [b"1"]                 ],
-            TokenTypes.FALSE:            [ [b"0"      ], [b"0"]                ]
-
+            TokenTypes.PISIGN:           [ [b"{pi}"   ], [255]               ]
         }
 
         # Values of these types are unchanged.
@@ -212,11 +209,12 @@ class Tokenizer():
             TokenTypes.LABEL
         ]
 
-    def tokenizeString(self,tag,value):
+    def __tokenizeLiteral(self,tag,value):
         result = bytearray()
         
         if self.configIndex == 1:
-            result = Petscii.toPetscii(value)
+            data = str(value)
+            result = Petscii.toPetscii(data)
 
         else:
             # String for basic file
@@ -224,62 +222,6 @@ class Tokenizer():
             
         return result
 
-    def tokenizeByte(self,tag,value):
-        
-        result = bytearray()
-
-        if self.configIndex == 1:
-            data = str(value)
-            result = self.tokenizeString(tag,data)            
-        else:
-            # String for basic file
-            result = bytearray(str(value), "ascii")
-    
-        return result
-    
-    def tokenizeInteger(self,tag,value):
-        
-        result = bytearray(2)
-
-        if self.configIndex == 1:
-            data = str(value)
-            result = self.tokenizeString(tag,data)
-
-        else:
-            # String for basic file
-            result = bytearray(str(value), "ascii")
-
-        return result
-    
-    def tokenizeFloat(self,tag,value):
-
-        result = bytearray()
-
-        if self.configIndex == 1:
-            data = str(value)
-            result = self.tokenizeString(tag,data)
-
-        else:
-            # String for basic file
-            result = bytearray(str(value), "ascii")
-        
-        return result
-    
-    def tokenizeBoolean(self,tag,value):
-
-        result = bytearray()
-
-        data = value
-
-        if self.configIndex == 1:
-            result = self.tokenizeString(tag,data)
-
-        else:
-            # String for basic file
-            result = bytearray(data, "ascii")
-        
-        return result
-    
     def tokenize(self, tokenType, value=None):
 
         #
@@ -300,8 +242,6 @@ class Tokenizer():
 
             return result
 
-        #st = cbas.symbolTable
-        
         #
         # For some Tokens the value remains unchanged.
         #
@@ -312,13 +252,7 @@ class Tokenizer():
         #
         # literals
         #
-        if tokenType == TokenTypes.STRING:
-            return self.tokenizeString(tokenType, value)
-        elif tokenType == TokenTypes.INTEGER:
-            return self.tokenizeInteger(tokenType, value)
-        elif tokenType == TokenTypes.FLOAT:
-            return self.tokenizeFloat(tokenType, value)
-        elif tokenType == TokenTypes.BOOLEAN:
-            return self.tokenizeBoolean(tokenType, value)
+        if tokenType in [ TokenTypes.STRING, TokenTypes.INTEGER, TokenTypes.FLOAT, TokenTypes.BOOLEAN ]:
+            return self.__tokenizeLiteral(tokenType, value)
         
         raise ValueError("Unknown tag: {}".format(tokenType))
