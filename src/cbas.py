@@ -16,9 +16,10 @@ def showHelp():
     print( "-a    - Address of BasicProgram. Default 2049" )
     print( "-b    - Beautify Basic Code. Uses Space to format basic code.")
     print( "-r    - Reuse variable names.")
+    print( "-g    - Build global literals.")
     print( "" )
 
-def runCompiler( version, inputFile, outputFolder, objectFolder, lineNumberStart, lineNumberStep, basicStartAddress, beautify):
+def runCompiler( version, inputFile, outputFolder, objectFolder, lineNumberStart, lineNumberStep, basicStartAddress, beautify, concatenateLines):
     compiler = Compiler(version)
     compiler.objectFolder = objectFolder
     compiler.binFolder = outputFolder
@@ -26,6 +27,7 @@ def runCompiler( version, inputFile, outputFolder, objectFolder, lineNumberStart
     compiler.lineNumberStep = lineNumberStep
     compiler.basicStartAddress = basicStartAddress
     compiler.beautify = beautify
+    compiler.concatenateLines = concatenateLines
     compiler.compileFile( inputFile )
 
 def main():
@@ -35,9 +37,13 @@ def main():
     inputFile    = "./obj/testapp.bas"
     #inputFile    = "./obj/pp_include.bas"
     #inputFile    = r"./obj/basic_V2.bas"
+    #inputFile    = r"./obj/perf.bas"
     objectFolder = "/home/work/cbas/obj"
     outputFolder = "/home/work/cbas/bin"
     
+    cbas.symbolTable.reuseVariables = False
+    cbas.symbolTable.buildGlobals = False
+
     #inputFile       = None
     #objectFolder    = None
     #outputFolder    = None
@@ -46,12 +52,13 @@ def main():
     lineNumberStep  = 1
     basicStartAddress = 2049
     beautify          = False
+    concatenateLines  = False
 
     #
     # Check CLI-Parameter
     #
     args = sys.argv[1:]
-    options = "hbs:o:v:t:l:a:r"
+    options = "hbs:o:v:t:l:a:r:g"
     long_options = []
 
     try:
@@ -84,6 +91,9 @@ def main():
 
             elif currentArg in ("-r"):
                 cbas.symbolTable.reuseVariables = True
+
+            elif currentArg in ("-g"):
+                cbas.symbolTable.buildGlobals = True
 
             elif currentArg in ("-h"):
                 showHelp()
@@ -125,7 +135,7 @@ def main():
     #
     # Run Compiler
     #
-    runCompiler( basicVersion, inputFile, outputFolder, objectFolder, lineNumberStart, lineNumberStep, basicStartAddress, beautify )
+    runCompiler( basicVersion, inputFile, outputFolder, objectFolder, lineNumberStart, lineNumberStep, basicStartAddress, beautify, concatenateLines )
 
 
 

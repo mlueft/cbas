@@ -212,17 +212,11 @@ class Tokenizer():
             TokenTypes.LABEL
         ]
 
-        # Conversion for strings.
-        self.petscii = self._createPetscii()
-
-    def _createPetscii(self):
-        return Petscii()
-
     def tokenizeString(self,tag,value):
         result = bytearray()
         
         if self.configIndex == 1:
-            result = self.petscii.toPetscii(value)
+            result = Petscii.toPetscii(value)
 
         else:
             # String for basic file
@@ -271,6 +265,21 @@ class Tokenizer():
         
         return result
     
+    def tokenizeBoolean(self,tag,value):
+
+        result = bytearray()
+
+        data = value
+
+        if self.configIndex == 1:
+            result = self.tokenizeString(tag,data)
+
+        else:
+            # String for basic file
+            result = bytearray(data, "ascii")
+        
+        return result
+    
     def tokenize(self, tokenType, value=None):
 
         #
@@ -309,5 +318,7 @@ class Tokenizer():
             return self.tokenizeInteger(tokenType, value)
         elif tokenType == TokenTypes.FLOAT:
             return self.tokenizeFloat(tokenType, value)
+        elif tokenType == TokenTypes.BOOLEAN:
+            return self.tokenizeBoolean(tokenType, value)
         
         raise ValueError("Unknown tag: {}".format(tokenType))

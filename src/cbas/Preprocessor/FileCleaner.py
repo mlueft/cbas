@@ -237,9 +237,10 @@ class FileCleaner():
                 if line[pos:pos+2] == "/*":
                     isComment = True
 
-                if line[pos-1:pos+1] == "*/" :
+                if line[pos:pos+2] == "*/" :
                     isComment = False
                     c = ""
+                    pos+=1
 
                 if not isComment:
                     newLine += c

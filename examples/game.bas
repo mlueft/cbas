@@ -131,9 +131,8 @@ goto @main
     MENU_TEXT2$ = "menu3"
     MENU_TEXT3$ = "menu4"
     MENU_TEXT4$ = "menu5"
-    MENU_TEXT5$ = "menu6"
-    MENU_TEXT6$ = "menu7"
-    MENU_TEXT7$ = "quit"
+    MENU_TEXT5$ = "quit"
+    MENU_TEXT6$ = ""
     gosub @runMenu
     return
 }
@@ -167,4 +166,5 @@ goto @main
     // poke 2051,0
     PRINTAT( 0,0, "load";chr$(34);"testapp.bas.prg";chr$(34);"";chr$(44);"8";chr$(44);"1" )
     PRINTAT( 0,5, "run" )
+    PRINTAT( 0,6, "list -10" )
 }

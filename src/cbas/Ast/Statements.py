@@ -77,8 +77,8 @@ class StatementParser():
 
         condition = ExpressionParser.parseExpression(parser,BindingPower.DEFAULT)
 
-        # We skip THEN,GOTO,GOSUB
-        parser.expectOne([TokenTypes.THEN,TokenTypes.GOTO,TokenTypes.GOSUB])
+        # We skip THEN
+        parser.advance([TokenTypes.THEN])
 
         if parser.currentTokenType == TokenTypes.CURLYOPEN:
             # we have a scope after THEN

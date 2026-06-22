@@ -34,19 +34,19 @@ class BasicBuilder():
     BASIC  = 0
     PRG    = 1
 
-    def __init__(self, configIndex=2, prettify=True):
+    def __init__(self, configIndex=2):
         self.configIndex = configIndex
         self.codeLines = []
-        self.prettify = prettify
+
+        self.concatenateLines = False
         self.tokenizer = self._createTokenizer(configIndex)
 
-        self.prittifier = b""
-        if prettify:
-            self.prittifier = b" "
+        self.__beautifier = b""
+        self.__beautify = False
 
-        self.EOL = b''
+        self.__EOL = b''
         if self.configIndex == BasicBuilder.BASIC:
-            self.EOL = b"\n"
+            self.__EOL = b"\n"
 
         # For these Types float parameters are cast to integer
         self.castTypes = [
@@ -81,10 +81,29 @@ class BasicBuilder():
             TokenTypes.TAB
         ]
 
+    @property
+    def beautify(self):
+        return self.__beautify
+    
+    @beautify.setter
+    def beautify(self,value):
+        if self.__beautify == value:
+            return
+        
+        self.__beautify = value
+        self.__beautifier = b""
+
+        if self.__beautify:
+            self.__beautifier = b" "
+        
     def _createTokenizer(self, configIndex):
         return Tokenizer(configIndex)
     
     def resolveSymbols(self,line):
+
+        # We need a copy of line to look for { or }
+        # Becase replacing symbols could add } in line.
+        result = line
 
         #
         # OPEN SCOPE
@@ -95,15 +114,38 @@ class BasicBuilder():
             cbas.symbolTable.openScope()
 
 
+        literals = cbas.symbolTable.getLiterals()
+        
         #line = line.decode("ascii")
         pattern = re.compile(b"#[0-9][0-9][0-9]")
-        matches = pattern.findall(line)
+        matches = pattern.findall(result)
         for match in matches:
+
+            #
+            # Replace symbol by its literal.
+            #
+            for l in literals:
+                if bytes(l.placeholder,"ascii") == match:
+
+                    _type = TokenTypes.STRING
+                    if l.type == "integer":
+                        _type = TokenTypes.INTEGER
+                    elif l.type == "float":
+                        _type = TokenTypes.FLOAT
+                    elif l.type == "boolean":
+                        _type = TokenTypes.BOOLEAN
+                                            
+                    a = self.tokenizer.tokenize(_type, l.code)
+                    result = result.replace( match,a)
+
+            #
+            # Replace symbol by its variable name.
+            #
             symbolName = match
-            variableName = cbas.symbolTable.getVariable(symbolName.decode("ascii"))
+            variableName = cbas.symbolTable.getVariableName(symbolName.decode("ascii"))
             
             a = bytearray(variableName.upper(),"ascii")
-            line = line.replace( symbolName,a)
+            result = result.replace( symbolName,a)
 
         #
         # CLOSE SCOPE
@@ -113,7 +155,7 @@ class BasicBuilder():
         for match in matches:
             cbas.symbolTable.closeScope()
 
-        return line
+        return result
 
     def getHandler(self,node):
         _type = type(node)
@@ -142,7 +184,7 @@ class BasicBuilder():
 
         if lines is not None:
             for l in lines:
-                self.codeLines.append(l+self.EOL)
+                self.codeLines.append(l)
 
     ## Replaces symbols with their values
     #
@@ -163,6 +205,12 @@ class BasicBuilder():
         # 
         result = []
         for line in codeLines:
+            if line != b"{" and line != b"}":
+                result.append(line)
+
+        return result
+    
+        for line in codeLines:
 
             # Seperate code parts and strings
             # We have to break up the line into a list
@@ -176,7 +224,7 @@ class BasicBuilder():
                 
                 if c == b'"'[0]:
 
-                    parts.append(partLine.rstrip(b"\n"))
+                    parts.append(partLine)
                     partLine = bytearray()
 
                     # a string starts
@@ -191,15 +239,16 @@ class BasicBuilder():
                         else:
                             # end of string reached
                             partLine += c.to_bytes(length=1, byteorder='big')
-                            parts.append(partLine.rstrip(b"\n"))
+                            parts.append(partLine)
                             partLine = bytearray()
+                            break
 
                 else:
                     partLine += c.to_bytes(length=1, byteorder='big')
 
                 pos += 1
 
-            parts.append(partLine.rstrip(b"\n"))
+            parts.append(partLine)
 
 
             #
@@ -216,7 +265,7 @@ class BasicBuilder():
             # Remove SCOPE definitions
             #
             isScope=False
-            pattern = re.compile(b".*[\{\}].*")
+            pattern = re.compile(b"\{.*\}")
             i=0
             while i < len(parts):
                 part=parts[i]
@@ -229,7 +278,6 @@ class BasicBuilder():
 
             if not isScope:
                 result.append(line)
-
 
         return result
     
@@ -257,18 +305,21 @@ class BasicBuilder():
     #
     def __concatenateLines(self, codeLines):
 
+        if not self.concatenateLines:
+            return codeLines
+        
         _before = []
 
         result = []
 
         linenr = len(codeLines)-1
         while  linenr > 0 :
-            line = codeLines[linenr].rstrip(b"\n")
-            prevLine  = codeLines[linenr-1].rstrip(b"\n")
+            line = codeLines[linenr]
+            prevLine  = codeLines[linenr-1]
             if line is not None:
                 concat = True
 
-                if len(line)+len(prevLine) >= 80 - len(prevLine) + 1: concat = False 
+                if len(line)+len(prevLine) >= 70 - len(prevLine) + 1: concat = False 
                 if prevLine == b'}': concat = False
                 if line == b'}': concat = False
                 if prevLine == b'{': concat = False
@@ -280,7 +331,7 @@ class BasicBuilder():
                 if concat:
                     prevLine += self.tokenizer.tokenize(TokenTypes.COLON)
                     prevLine += line
-                    codeLines[linenr-1] = prevLine+self.EOL
+                    codeLines[linenr-1] = prevLine
                     codeLines[linenr] = None
             linenr -= 1
 
@@ -294,6 +345,47 @@ class BasicBuilder():
 
         return tmp
     
+    ## Generates the globals definition.
+    #
+    #
+    def __generateGlobals(self, codeLines):
+        #return codeLines
+        result = []
+
+        #
+        #
+        #
+
+        globals = cbas.symbolTable.getGlobals()
+        for symbol in globals:
+            line = bytearray()
+
+            type = TokenTypes.STRING
+            if symbol.type == "integer":
+                type = TokenTypes.INTEGER
+            elif symbol.type == "float":
+                type = TokenTypes.FLOAT
+            elif symbol.type == "boolean":
+                type = TokenTypes.BOOLEAN
+
+            variableName = cbas.symbolTable.getVariableName(symbol.placeholder)
+
+            line = self.tokenizer.tokenize(type, symbol.placeholder)
+
+            line += self.tokenizer.tokenize(TokenTypes.EQ)
+
+            line += self.tokenizer.tokenize(type, symbol.name)
+
+            result.append(line)
+        
+
+        #
+        #
+        #
+        result = codeLines[:1] + result + codeLines[1:]
+
+        return result
+    
     def main(self, ast):
         self.codeLines = []
 
@@ -302,13 +394,22 @@ class BasicBuilder():
         #
         ast.topDown(self.astHandler)
 
-        codeLines = self.__replaceSymbols(self.codeLines)
+        codeLines = self.codeLines
+
+        codeLines = self.__generateGlobals(codeLines)
+
+        codeLines = self.__replaceSymbols(codeLines)
+
+        # tokenizer should be extracted from replaceSymbols
+        codeLines = codeLines# self.__concatenateLines(codeLines)
 
         codeLines = self.__concatenateLines(codeLines)
 
         codeLines = self.__cleanupCodeLines(codeLines)
 
-        self.codeLines = codeLines
+        self.codeLines = []
+        for line in codeLines:
+            self.codeLines.append(line+self.__EOL)
 
         return self.codeLines
 
@@ -363,16 +464,16 @@ class BasicBuilder():
         handler = self.getHandler(node.statement)
         b = handler(node.statement)
         line += b[0]
-        line += self.prittifier
+        line += self.__beautifier
 
         for p in node.parameters:
             handler = self.getHandler(p)
             b = handler(p)
             line += b[0]
             if p != node.parameters[-1]:
-                line += self.prittifier
+                line += self.__beautifier
 
-        line += self.prittifier
+        line += self.__beautifier
 
         result.append(line)
         
@@ -396,16 +497,16 @@ class BasicBuilder():
         b = handler(node.statement)
         line += b[0]
 
-        line += self.prittifier
+        line += self.__beautifier
 
         for p in node.parameters:
             handler = self.getHandler(p)
             b = handler(p)
             line += b[0]
             if p != node.parameters[-1]:
-                line += self.prittifier
+                line += self.__beautifier
         
-        line += self.prittifier
+        line += self.__beautifier
 
         result.append(line)
 
@@ -424,28 +525,28 @@ class BasicBuilder():
         
         line = bytearray()
         line += self.tokenizer.tokenize(TokenTypes.FOR)
-        line += self.prittifier
+        line += self.__beautifier
 
         handler = self.getHandler(node.runner)
         b = handler(node.runner)
         line += b[0]
-        line += self.prittifier
+        line += self.__beautifier
 
         #line += "="
         line += self.tokenizer.tokenize(TokenTypes.EQ)
-        line += self.prittifier
+        line += self.__beautifier
 
         handler = self.getHandler(node.start)
         b = handler(node.start)
         line += b[0]
 
-        line += self.prittifier
+        line += self.__beautifier
 
 
         #line += "to"
         line += self.tokenizer.tokenize(TokenTypes.TO)
 
-        line += self.prittifier
+        line += self.__beautifier
         
         handler = self.getHandler(node.end)
         b = handler(node.end)
@@ -454,7 +555,7 @@ class BasicBuilder():
         if node.step is not None:
             #line += "step"
             line += self.tokenizer.tokenize(TokenTypes.STEP)
-            line += self.prittifier
+            line += self.__beautifier
             handler = self.getHandler(node.step)
             b = handler(node.step)
             line += b[0]
@@ -493,18 +594,18 @@ class BasicBuilder():
         line = bytearray()
         # IF
         line += self.tokenizer.tokenize(TokenTypes.IF)
-        line += self.prittifier
+        line += self.__beautifier
 
         # condition
         line += self.tokenizer.tokenize(TokenTypes.NOT)
         line += self.tokenizer.tokenize(TokenTypes.ROUNDOPEN)
         line += conditionLine
         line += self.tokenizer.tokenize(TokenTypes.ROUNDCLOSE)
-        line += self.prittifier
+        line += self.__beautifier
         
         #THEN
         line += self.tokenizer.tokenize(TokenTypes.GOTO)
-        line += self.prittifier
+        line += self.__beautifier
         line += endifLabel
 
         result.append(line)
@@ -519,9 +620,9 @@ class BasicBuilder():
 
         # ENDIF LABEL
         line = bytearray()
-        line += self.prittifier
+        line += self.__beautifier
         line += endifLabel
-        line += self.prittifier
+        line += self.__beautifier
         result.append(line)
 
         return result
@@ -541,7 +642,7 @@ class BasicBuilder():
         #line += "dim"
         line += self.tokenizer.tokenize(TokenTypes.DIM)
 
-        line += self.prittifier
+        line += self.__beautifier
 
         #b = node.variable.toBasic()
         handler=self.getHandler( node.variable)
@@ -558,7 +659,7 @@ class BasicBuilder():
             if p != node.dimensions[-1]:
                 #line += ","
                 line += self.tokenizer.tokenize(TokenTypes.COMMA)
-                line += self.prittifier
+                line += self.__beautifier
 
         #line += ")"
         line += self.tokenizer.tokenize(TokenTypes.ROUNDCLOSE)
@@ -578,7 +679,7 @@ class BasicBuilder():
         #line += "on"
         line += self.tokenizer.tokenize(TokenTypes.ON)
         
-        line += self.prittifier
+        line += self.__beautifier
         
         handler = self.getHandler(node.index)
         b = handler(node.index)[0]
@@ -586,13 +687,13 @@ class BasicBuilder():
             b = bytearray(str(int(float(b))),encoding="ascii")
         line += b
         
-        line += self.prittifier
+        line += self.__beautifier
         
         handler = self.getHandler(node.jumpMethode)
         b = handler(node.jumpMethode)
         line += b[0]
         
-        line += self.prittifier
+        line += self.__beautifier
         
         for p in node.lineNumbers:
             handler = self.getHandler(p)
@@ -603,7 +704,7 @@ class BasicBuilder():
             if p != node.lineNumbers[-1]:
                 #line += ","
                 line += self.tokenizer.tokenize(TokenTypes.COMMA)
-                line += self.prittifier
+                line += self.__beautifier
         
 
         return [line]
@@ -622,12 +723,12 @@ class BasicBuilder():
         #line += "def"
         line += self.tokenizer.tokenize(TokenTypes.DEF)
 
-        line += self.prittifier
+        line += self.__beautifier
 
         #line += "fn"
         line += self.tokenizer.tokenize(TokenTypes.FN)
 
-        line += self.prittifier
+        line += self.__beautifier
 
         handler = self.getHandler(node.functionName)
         b = handler(node.functionName)
@@ -643,7 +744,7 @@ class BasicBuilder():
             if p != node.parameters[-1]:
                 #line += ","
                 line += self.tokenizer.tokenize(TokenTypes.COMMA)
-                line += self.prittifier
+                line += self.__beautifier
         
         #line += ")="
         line += self.tokenizer.tokenize(TokenTypes.ROUNDCLOSE)
@@ -669,7 +770,7 @@ class BasicBuilder():
         #line += "fn"
         line += self.tokenizer.tokenize(TokenTypes.FN)
 
-        line += self.prittifier
+        line += self.__beautifier
 
         handler = self.getHandler(node.functionName)
         b = handler(node.functionName)
@@ -686,7 +787,7 @@ class BasicBuilder():
                 #line += ","
                 line += self.tokenizer.tokenize(TokenTypes.COMMA)
 
-                line += self.prittifier
+                line += self.__beautifier
 
         #line += ")"
         line += self.tokenizer.tokenize(TokenTypes.ROUNDCLOSE)
@@ -715,7 +816,7 @@ class BasicBuilder():
         b = handler(node.statement)
         line += b[0]
         
-        line += self.prittifier
+        line += self.__beautifier
         
 
         for p in node.parameters:
@@ -727,7 +828,7 @@ class BasicBuilder():
             if p != node.parameters[-1]:
                 line += seperator
         
-        line += self.prittifier
+        line += self.__beautifier
         
         return [line]
 
@@ -763,7 +864,7 @@ class BasicBuilder():
                 #line += ","
                 line += self.tokenizer.tokenize(TokenTypes.COMMA)
 
-                line += self.prittifier
+                line += self.__beautifier
 
             #print("p"+line.decode("ascii"))
 
@@ -797,13 +898,13 @@ class BasicBuilder():
 
         #line = line[0]
         
-        line += self.prittifier
+        line += self.__beautifier
         
         #line += "="
         r = self.tokenizer.tokenize(TokenTypes.EQ)
         line += r
         
-        line += self.prittifier
+        line += self.__beautifier
 
         line += right[0]
 
@@ -823,10 +924,8 @@ class BasicBuilder():
 
         handler = self.getHandler(node.value)
 
-        #result.append("{")
         result.append( self.tokenizer.tokenize(TokenTypes.CURLYOPEN) )
         result.append(handler(node.value))
-        #result.append("}")
         result.append( self.tokenizer.tokenize(TokenTypes.CURLYCLOSE) )
 
         return result
@@ -875,11 +974,11 @@ class BasicBuilder():
 
         line = bl[0]
 
-        line += self.prittifier
+        line += self.__beautifier
 
         line += bo[0]
 
-        line += self.prittifier
+        line += self.__beautifier
 
         line += br[0]
 
@@ -903,14 +1002,7 @@ class BasicBuilder():
         elif node.tag == "None":
             line = ""
         
-        elif node.tag == "boolean":
-            if node.value:
-                line = self.tokenizer.tokenize(TokenTypes.TRUE)
-            else:
-                line = self.tokenizer.tokenize(TokenTypes.FALSE)
-
         else:
-            #line = bytearray(str(node.value),"ascii")
             line = self.tokenizer.tokenize(node.type, node.value)
 
         result.append(line)

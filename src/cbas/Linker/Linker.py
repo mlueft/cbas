@@ -9,10 +9,10 @@ class Linker():
         self.lineNumberStep = 1
         self.basicStartAddress = 2049
 
-        if not self.prg:
-            self.prittifier = b" "
+        if self.prg:
+            self.beautifier = b""
         else:
-            self.prittifier = b""
+            self.beautifier = b" "
 
         self.currentAddress = self.basicStartAddress
 
@@ -24,7 +24,7 @@ class Linker():
 
     def __isLabelDefinition(self, line):
         pattern = re.compile(b"^@label_[0-9]{5}")
-        matches = pattern.findall(line)
+        matches = pattern.findall(line.strip())
         return len(matches) > 0
     
     def main(self,lines):
@@ -104,7 +104,7 @@ class Linker():
                     l += tmp
                 
                 # line
-                l += self.prittifier+line
+                l += self.beautifier+line
                 
                 # EOL
                 if self.prg:
@@ -125,9 +125,5 @@ class Linker():
         # EOF
         if self.prg:
             l += bytes([0,0])    
-
-            
-        
-
 
         return result

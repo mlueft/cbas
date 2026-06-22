@@ -1,14 +1,50 @@
 
+class SymbolKind():
+    
+    VARIABLE = 0
+    LITERAL  = 1
+
+    __matchTable = {
+        "variable":   VARIABLE,
+        "literal":     LITERAL
+    }
+
+    @staticmethod
+    def toType(value):
+        if value in SymbolKind.__matchTable:
+            return SymbolKind.__matchTable[value]
+        raise ValueError("Token type '{}' not recognized!".format(value))
+
+    @staticmethod
+    def toString(value):
+        for e in SymbolKind.__matchTable:
+            if SymbolKind.__matchTable[e] == value:
+                return e
+        #raise ValueError("Token type '{}' not recognized!".format(value))
+
+##
+#
+#
 class Symbol():
 
     def __init__(self):
+
+        # 0 = variable
+        # 1 = literal
+        self.kind = None
+        # ["float","integer","string"]
         self.type = None
-        self.name = None
-        self.value = None
-        self.parameters = 0
+        # The code represented by the symbol.
+        # Its a literal or a variable.
+        self.code = None
+        # line and pos tuple of declaration
         self.declaration = None
+        # list of line and pos tuples of usage
         self.usages = []
+        # Name of the variable in generated basic code.
         self.variableName = None
+        # placeholder
+        self.placeholder = ""
 
     @property
     def hasParameters(self):
@@ -17,14 +53,14 @@ class Symbol():
         return True
     
     def __str__(self):
-        result = "{} {} {} {} {}\n ".format(self.type, self.name, self.value, self.declaration, self.parameters)
+        result = "{} {} {}\n ".format(self.type, self.code, self.declaration)
         for i in self.usages:
             result += "({}:{})".format(i[0],i[1])
         return result
 
 class SymbolTable():
 
-    ID = 0
+    __ID = 0
 
     def __init__(self):
         self.__symbols = {}
@@ -45,78 +81,139 @@ class SymbolTable():
             "reserved12":"π"
 
         }]
+        
+        # Reuses variable names from scopes
         self.reuseVariables = False
+
+        # build global literals
+        self.buildGlobals = False        
 
     def debug(self):
         for k,s in self.__symbols.items():
             print( "{} {}".format(k,s) )
 
+    ## Deletes all symbols
+    #
+    #
     def reset(self):
         self.__symbols = {}
 
+    ## Returns the ID of the symbol with the given variable name.
+    #
+    #
     def getId(self,name):
     
         for k,s in self.__symbols.items():
-            if s.name == name:
+            if s.code == name:
                 return k
             
         return None
     
+    ## Returns the symbol of the given ID.
+    #
+    #
     def getSymbol(self, id):
         return self.__symbols[id]
     
     ##
     #
     #
-    def addSymbol(self, type, name, line = None, pos = None, value=None, params=None):
-        print("  addSymbol")
+    def __isGlobal(self, symbol):
+        
+        if not self.buildGlobals:
+            return False
+        
+        if (len(symbol.usages) >= 1 and symbol.type != "string") or \
+            (len(symbol.name) > 4 and len(symbol.usages) >= 1 and symbol.type == "string"):
+            return True
+        return False
+    
+    ##
+    #
+    #
+    def getGlobals(self):
+        result = []
+
+        for k,symbol in self.__symbols.items():
+            if symbol.kind == SymbolKind.LITERAL:
+                if self.__isGlobal(symbol):
+                    result.append(symbol)
+
+        return result
+
+    ##
+    #
+    #
+    def getLiterals(self):
+        result = []
+
+        for k,symbol in self.__symbols.items():
+            if symbol.kind == SymbolKind.LITERAL:
+                if not self.__isGlobal(symbol):
+                    result.append(symbol)
+
+        return result
+    
+    ## Adds a symbol to the table and returns the unique ID.
+    #
+    #
+    def addSymbol(self, type, name, line = None, pos = None, kind = 0):
+        
         id = self.getId(name)
         if id:
             symbol = self.__symbols[id]
             symbol.usages.append((line,pos))
             return id
         
-        id = "#{:0>3}".format(SymbolTable.ID)
+        id = "#{:0>3}".format(SymbolTable.__ID)
 
         symbol = Symbol()
+        symbol.kind = kind
         symbol.type = type
-        symbol.name = name
-        symbol.value = value
-        symbol.parameters = params
+        symbol.code = name
         symbol.declaration = (line,pos)
+        symbol.placeholder = id
 
         self.__symbols[id] = symbol
-        SymbolTable.ID += 1
+        SymbolTable.__ID += 1
         return id
 
+    ## Opens a scope.
+    #  All new variables are stored in the current scope.
+    #  After closed the scope local variables will be released.
+    #
     def openScope(self):
-        if self.reuseVariables:
-            self.usedVariableNames.append({})
-
-    def closeScope(self):
-        if self.reuseVariables:
-            self.usedVariableNames.pop()
-
-    def obsolet__freeVariable(self,variableName):
-        for s in self.usedVariableNames:
-            if self.usedVariableNames[s] == variableName:
-                del self.usedVariableNames[s]
-                return
-    
-    def getVariable(self,symbolName):
-
-       
-        #for i in range(len(self.usedVariableNames)-1,-1,-1):
-        #    usedVariableNames = self.usedVariableNames[i]
-        #    if symbolName in usedVariableNames:
-        #        return usedVariableNames[symbolName]
+        if not self.reuseVariables:
+            return
         
-        symbol = self.__symbols[symbolName]
+        self.usedVariableNames.append({})
+
+    ## Closes the current scope.
+    #  Local variable names will be released.
+    #
+    def closeScope(self):
+        if not self.reuseVariables:
+            return
+        
+        self.usedVariableNames.pop()
+
+    ## Generates a variable name for the symbol defined by id
+    #  and returns it.
+    #
+    def getVariableName(self,id):
+
+        #
+        # Return a already fixed variable name
+        #
+        symbol = self.__symbols[id]
 
         if symbol.variableName is not None:
             return symbol.variableName
 
         
+        #
+        # Generate the next free variable name.
+        #
         suffix = ""
         if symbol.type == "string":
             suffix = "$"
@@ -138,8 +235,12 @@ class SymbolTable():
 
                 if not found:
 
-                    self.usedVariableNames[len(self.usedVariableNames)-1][symbolName] = candidate
+                    #
+                    # Store the variable name to the symbol
+                    # and return the variable name.
+                    #
+                    self.usedVariableNames[len(self.usedVariableNames)-1][id] = candidate
                     symbol.variableName = candidate
-                    print(" new: {}".format(candidate))
+                    print((" "*len(self.usedVariableNames))+"new: {}".format(candidate))
                     return candidate
         

@@ -83,12 +83,12 @@ class Matrix():
     ]
 
     Definitions = {
-        "literalSientific":     { "order":    0, "handler": Tokenizer.defaultHandler     , "type": TokenTypes.SIENTIFIC,   "expression": "(?i)-?[0-9]+\.?[0-9]*e-?[0-9]*"       },
+        "literalSientific":     { "order":    0, "handler": Tokenizer.scientificHandler  , "type": TokenTypes.SIENTIFIC,   "expression": "(?i)-?[0-9]+\.?[0-9]*e-?[0-9]*"       },
         "lineNumber":           { "order":   10, "handler": Tokenizer.defaultHandler     , "type": TokenTypes.LINENUMBER,  "expression": "^[0-9]+"                              },
         "label":                { "order":   11, "handler": Tokenizer.defaultHandler     , "type": TokenTypes.LABEL,       "expression": "(?i)@[a-z]{1}[a-z0-9]*"               },
-        "literalFloat":         { "order":   20, "handler": Tokenizer.defaultHandler     , "type": TokenTypes.FLOAT,       "expression": "[0-9]+[.][0-9]*"                      },
-        "literalInt":           { "order":   40, "handler": Tokenizer.defaultHandler     , "type": TokenTypes.INTEGER,     "expression": "[0-9]+[%]?"                           },
-        "literalBoolean":       { "order":   41, "handler": Tokenizer.defaultHandler     , "type": TokenTypes.BOOLEAN,     "expression": "(?i)(true|false)"                     },
+        "literalFloat":         { "order":   20, "handler": Tokenizer.floatHandler       , "type": TokenTypes.FLOAT,       "expression": "[0-9]+[.][0-9]*"                      },
+        "literalInt":           { "order":   40, "handler": Tokenizer.intHandler         , "type": TokenTypes.INTEGER,     "expression": "[0-9]+[%]?"                           },
+        "literalBoolean":       { "order":   41, "handler": Tokenizer.booleanHandler     , "type": TokenTypes.BOOLEAN,     "expression": "(?i)(true|false)"                     },
         "literalString":        { "order":   50, "handler": Tokenizer.stringHandler      , "type": TokenTypes.STRING,      "expression": '(?i)"[^"]*"'                          },
         "printUsing":           { "order":  110, "handler": Tokenizer.defaultHandler     , "type": TokenTypes.PRINTUSING,  "expression": "(?i)PRINT USING"                      },
         "collision":            { "order":  120, "handler": Tokenizer.defaultHandler     , "type": TokenTypes.COLLISION,   "expression": "(?i)COLLISION"                        }, # s $fe $17

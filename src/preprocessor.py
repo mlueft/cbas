@@ -45,6 +45,7 @@ def main():
     inputFile    = r"./examples/testapp.bas"
     #inputFile    = r"./examples/basic_V2.bas"
     #inputFile    = r"./examples/pp_include.bas"
+    #inputFile    = r"./examples/perf.bas"
     outputFolder = r"./obj"
     libFolders   = [
         r"./lib"

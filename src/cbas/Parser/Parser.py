@@ -76,7 +76,10 @@ class Parser():
 			self.pos += 1
 			return tk
 		
-		if tk.type == conditionType:
+		if type(conditionType) != type([]):
+			conditionType = [conditionType]
+			
+		if tk.type in conditionType:
 			self.pos += 1
 
 		return tk

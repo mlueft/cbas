@@ -30,15 +30,17 @@ class Compiler():
         self.binFolder = None
         self.lineNumberStart = 1
         self.lineNumberStep = 1
-        self.beautify = False
+        self.beautify = True
+        self.concatenateLines = False
         self.basicStartAddress = 2048
         self.basicLines = []
+        self.configIndex = configIndex
 
-        self.__config = self._createConfig(configIndex)
-        self.__lexer  = self._createLexer(configIndex)
-        self.__parser = self._createParser(configIndex)
-        self.__codeBuilder = self._createBasicBuilder(configIndex)
-        self.__linker = self._createLinker()
+        self.__config      = self._createConfig(configIndex)
+        self.__lexer       = None # self._createLexer(configIndex)
+        self.__parser      = None #self._createParser(configIndex)
+        self.__codeBuilder = None #self._createBasicBuilder(configIndex)
+        self.__linker      = None #self._createLinker()
 
     def _createConfig(self, configIndex):
         result = Config(configIndex)
@@ -53,7 +55,9 @@ class Compiler():
         return result
    
     def _createBasicBuilder(self, configIndex):
-        result = BasicBuilder(configIndex,self.beautify)
+        result = BasicBuilder(configIndex)
+        result.concatenateLines = self.concatenateLines
+        result.beautify = self.beautify
         return result
 
     def _createLinker(self, prg=True):
@@ -68,6 +72,7 @@ class Compiler():
         cbas.log("", "debug")
         cbas.log("lexer ...", "debug")
         cbas.log("============================================", "debug")
+        self.__lexer  = self._createLexer(self.configIndex)
         self.__lexer.config = self.__config.getLexerConfig()
         self.__lexer.tokenizeFile(inputFile)
         return self.__lexer.firstToken
@@ -85,6 +90,7 @@ class Compiler():
         cbas.log("", "debug")
         cbas.log("parser ...", "debug")
         cbas.log("============================================", "debug")
+        self.__parser = self._createParser(self.configIndex)
         self.__parser.config = self.__config.getParserConfig()
         return self.__parser.parse(tokenList)
 
@@ -106,9 +112,11 @@ class Compiler():
     def __runCodeBuilder(self,ast):
         cbas.log("CodeBuilder ...".format(), "debug")
         self.__resetAst(ast)
+        #self.__codeBuilder = self._createBasicBuilder(self.configIndex)
         return self.__codeBuilder.main(ast)
 
     def __runLinker(self,lines):
+        #self.__linker = self._createLinker()
         return self.__linker.main(lines)
 
 
@@ -158,6 +166,7 @@ class Compiler():
         cbas.log("", "debug")
         cbas.log("lexer ...", "debug")
         cbas.log("============================================", "debug")
+        self.__lexer  = self._createLexer(self.configIndex)
         self.__lexer.config = self.__config.getLexerConfig()
         self.__lexer.tokenizeLine(expression)
         

@@ -73,13 +73,13 @@ class ExpressionParser():
         
         if type == TokenTypes.INTEGER:
             token = parser.advance()
-            result = PrimaryExpression( "int", int(token.code), token )
+            result = PrimaryExpression( "integer", token.code, token )
             cbas.log("end:parsePrimaryExpression", "debug" )
             return result
         
         elif type == TokenTypes.FLOAT:
             token = parser.advance()
-            result = PrimaryExpression( "float", float(token.code), token)
+            result = PrimaryExpression( "float", token.code, token)
             cbas.log("end:parsePrimaryExpression", "debug" )
             return result
 
