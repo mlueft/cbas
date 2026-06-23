@@ -121,7 +121,7 @@ ifdef A
 ## CLI
 
 ```
-cbas.py -s test.bas -o ./obj -l ./lib;/tmp;c:\temp
+cbas.py -s ./obj/test.bas -o ./bin  -t ./obj -l10,10 -a 2049 -b -r -g
 ```
 
 | parameter | Description |
