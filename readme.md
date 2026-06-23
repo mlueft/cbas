@@ -22,6 +22,7 @@ preprocessor.py -s test.bas -o ./obj -l ./lib;/tmp;c:\temp
 | -s | The file to process. |
 | -o | The folder to store processed files. |
 | -l | CSV-list of paths to look for include files in. |
+| -h | SAhow help. |
 
 ## Statements
 
@@ -132,6 +133,8 @@ cbas.py -s test.bas -o ./obj -l ./lib;/tmp;c:\temp
 | -l | Line number start[, step]. Default 1,1|
 | -a | Address of Basic programm. Default 2049|
 | -b | Beautify Basic code. Spaces are inserted to make code readable.|
+| -r |Reuse variable names after leaving a scope|
+| -g |Build globals. Looks for literals used more then once and build a global for it.|
 
 # Thoughts
 
