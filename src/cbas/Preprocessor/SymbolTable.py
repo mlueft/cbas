@@ -3,9 +3,14 @@
 class Symbol():
 
     def __init__(self):
-        self.type = None
+        
+        # The name of the symbol
         self.name = None
+
+        # The value of the symbol.Optional
         self.value = None
+
+        # Parameters if function like. Optional
         self.params = None
 
     @property

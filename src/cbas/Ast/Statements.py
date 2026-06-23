@@ -7,6 +7,7 @@ import cbas.Events.EventManager
 import cbas.Events.Event
 import cbas.DataStructures.LinkedList
 import cbas.DataStructures.TreeNode
+import cbas.Compiler.SymbolTable
 
 Lookups = cbas.Parser.Lookups.Lookups
 BindingPower = cbas.Parser.BindingPower.BindingPower
@@ -17,7 +18,7 @@ LinkedList = cbas.DataStructures.LinkedList.LinkedList
 TreeNode = cbas.DataStructures.TreeNode.TreeNode
 TokenTypes = cbas.Lexer.TokenTypes.TokenTypes
 PrimaryExpression = cbas.Ast.Expressions.PrimaryExpression
-
+SymbolKind = cbas.Compiler.SymbolTable.SymbolKind
 
 class StatementParser():
     
@@ -262,7 +263,7 @@ class StatementParser():
 
         # Update Symboltable
         symbol = cbas.symbolTable.getSymbol(functionName.value)
-        symbol.kind = "function"
+        symbol.kind = SymbolKind.FUNCTION
         symbol.parameters = len(parameters)
 
         result = FunctionDefinitionStatement(functionName,parameters,body)
@@ -364,16 +365,10 @@ class StatementParser():
 #
 class Statement(TreeNode):
     
-    def __init__(self, value = None):
+    def __init__(self):
         super().__init__()
-        self.value = value
         self._basicGenerated = False
 
-    def toBasic(self):
-        if self._basicGenerated:
-            return None
-        self._basicGenerated = True        
-        return [self.value]
 
 ##
 # {
@@ -403,6 +398,7 @@ class BlockStatement(Statement):
     def _getNodes(self):
         return self.statements
 
+
 ## expression 
 # 4+6
 # 4-6
@@ -424,6 +420,7 @@ class ExpressionStatement(Statement):
     def _getNodes(self):
         return self.statement
     
+
 ##
 #
 #
@@ -573,6 +570,7 @@ class PrintStatement(Statement):
             result.append(p)
         return result
    
+
 ##
 #
 #
@@ -690,6 +688,7 @@ class ForStatement(Statement):
                 result.append(p)            
         return result
     
+
 ##
 #
 #

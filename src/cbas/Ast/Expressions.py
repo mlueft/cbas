@@ -373,29 +373,22 @@ class ExpressionParser():
 #
 class Expression(TreeNode):
 
-    def __init__(self, value = None):
+    def __init__(self):
         super().__init__()
-        self.value = value
         self._basicGenerated = False
 
     def _getNodes(self):
-        return [self.value]
+        return []
 
-    def toBasic(self):
-        if self._basicGenerated:
-            return None
-        self._basicGenerated = True
-        return None
     
 ##
 #
 #
 class PrimaryExpression(Expression):
     
-    #def __init__(self, tag=None, value = None, token = None):
     def __init__(self, value = None, token = None):
-        super().__init__(value)
-        #self.tag = tag
+        super().__init__()
+        self.value = value
         self.__token = token
         self._isLeaf = True
 
@@ -524,7 +517,8 @@ class PrefixExpression(Expression):
 class GroupingExpression(Expression):
 
     def __init__(self, expression):
-        super().__init__(expression)
+        super().__init__()
+        self.value = expression
         self.value.onReplace.add(self._hndReplaceValue)
 
     def _hndReplaceValue(self,ev):
@@ -532,6 +526,7 @@ class GroupingExpression(Expression):
         self.value.onReplace.remove(self._hndReplaceValue)
         self.value = ev.replacement
         self.value.onReplace.add(self._hndReplaceValue)
+
 
 ##
 #
@@ -602,7 +597,6 @@ class ProcesureCallExpression(Expression):
         return result
     
 
-
 ##
 #
 #
@@ -640,7 +634,6 @@ class FunctionCallExpression(Expression):
             result.append(p)
         return result
     
-
 
 ##
 #
@@ -690,6 +683,3 @@ class OnExpression(Expression):
     
 
  
-
-
-# cmd semicolon

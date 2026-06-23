@@ -643,6 +643,3 @@ class Petscii():
 
         return result
     
-    @staticmethod
-    def isPlaceholder(value):
-        return False

@@ -114,7 +114,7 @@ class Parser():
 
 		if type != tokenType:
 			if error == None:
-				raise ValueError("Expected {} but received {}!".format( TokenTypes.toString(tokenType), TokenTypes.toString(type) ))
+				raise ValueError("Syntax error @ {} {}: Expected {} but received {}!".format( self.currentToken.line, self.currentToken.pos, TokenTypes.toString(tokenType), TokenTypes.toString(type) ))
 			
 			raise ValueError( error )
 		

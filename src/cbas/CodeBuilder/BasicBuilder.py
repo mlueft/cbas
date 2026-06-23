@@ -31,6 +31,139 @@ PrimaryExpression = cbas.Ast.Expressions.PrimaryExpression
 Tokenizer = cbas.CodeBuilder.Tokenizer.Tokenizer
 SymbolKind = cbas.Compiler.SymbolTable.SymbolKind
 
+class VariableNameManager():
+
+    def __init__(self):
+        # Reuses variable names from scopes
+        self.reuseVariables = False
+        self.buildGlobals = False
+
+        self.variableNames = {}
+
+        self.usedVariableNames = [{
+            "reserved0":"DO",
+            "reserved1":"DS",
+            "reserved2":"DS$",
+            "reserved3":"EL",
+            "reserved4":"ER",
+            "reserved5":"GO",
+            "reserved6":"OR",
+            "reserved7":"PI",
+            "reserved8":"ST",
+            "reserved9":"TI",
+            "reserved10":"TI$",
+            "reserved11":"TO",
+            "reserved12":"π"
+
+        }]
+        
+    ##
+    #
+    #
+    def __isGlobal(self, symbol):
+        
+        if not self.buildGlobals:
+            return False
+        
+        if (len(symbol.usages) >= 1 and symbol.kind != SymbolKind.LITERAL_STRING) or \
+            (len(str(symbol.code)) > 4 and len(symbol.usages) >= 1 and symbol.kind == SymbolKind.LITERAL_STRING):
+            return True
+        return False
+    
+    ##
+    #
+    #
+    def getGlobals(self):
+        result = []
+
+        for k,symbol in cbas.symbolTable.symbols.items():
+            if symbol.isLiteral():
+                if self.__isGlobal(symbol):
+                    result.append(symbol)
+
+        return result
+
+    ##
+    #
+    #
+    def getLiterals(self):
+        result = []
+
+        for k,symbol in cbas.symbolTable.symbols.items():
+            if symbol.isLiteral():
+                if not self.__isGlobal(symbol):
+                    result.append(symbol)
+
+        return result
+    
+    ## Opens a scope.
+    #  All new variables are stored in the current scope.
+    #  After closed the scope local variables will be released.
+    #
+    def openScope(self):
+        if not self.reuseVariables:
+            return
+        self.usedVariableNames.append({})
+
+    ## Closes the current scope.
+    #  Local variable names will be released.
+    #
+    def closeScope(self):
+        if not self.reuseVariables:
+            return
+        self.usedVariableNames.pop()
+    
+
+    # The BasicBuilder has to take care of variable names.
+    # Name of the variable in generated basic code.
+    ## Generates a variable name for the symbol defined by id
+    #  and returns it.
+    #
+    def getVariableName(self,id):
+
+
+        #
+        # Return a already fixed variable name
+        #
+        if id in self.variableNames.keys():
+            return self.variableNames[id]
+
+        symbol = cbas.symbolTable.getSymbol(id)
+
+        #
+        # Generate the next free variable name.
+        #
+        suffix = ""
+        if symbol.kind == SymbolKind.VARIABLE_STRING:
+            suffix = "$"
+        elif symbol.kind == SymbolKind.VARIABLE_INTEGER:
+            suffix = "%"
+        
+        vnames0 = ["a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z"]
+        vnames1 = [""]+vnames0
+        for v1 in vnames1:
+            for v0 in vnames0:
+                candidate = v0+v1+suffix
+
+                found = False
+                for i in range(len(self.usedVariableNames)-1,-1,-1):
+                    usedVariableNames = self.usedVariableNames[i]
+                    for k in usedVariableNames:
+                        if usedVariableNames[k] == candidate:
+                            found = True
+
+                if not found:
+
+                    #
+                    # Store the variable name to the symbol
+                    # and return the variable name.
+                    #
+                    self.usedVariableNames[len(self.usedVariableNames)-1][id] = candidate
+                    self.variableNames[id] = candidate
+                    
+                    return candidate
+
+
 class BasicBuilder():
 
     BASIC  = 0
@@ -83,6 +216,10 @@ class BasicBuilder():
             TokenTypes.TAB
         ]
 
+        self.reuseVariables = False
+        self.variableNameManager = False
+        self.buildGlobals = False
+
     @property
     def beautify(self):
         return self.__beautify
@@ -100,8 +237,22 @@ class BasicBuilder():
         
     def _createTokenizer(self, configIndex):
         return Tokenizer(configIndex)
-    
+
+    def _createVariableNameManager(self):
+        if self.variableNameManager:
+            return self.variableNameManager
+        
+        result = VariableNameManager()
+        result.reuseVariables = self.reuseVariables
+        result.buildGlobals = self.buildGlobals
+
+        return result
+
+
+
     def resolveSymbols(self,line):
+
+        self.variableNameManager = self._createVariableNameManager()
 
         # We need a copy of line to look for { or }
         # Becase replacing symbols could add } in line.
@@ -113,10 +264,10 @@ class BasicBuilder():
         pattern = re.compile(b".*\{.*")
         matches = pattern.findall(line)
         for match in matches:
-            cbas.symbolTable.openScope()
+            self.variableNameManager.openScope()
 
 
-        literals = cbas.symbolTable.getLiterals()
+        literals = self.variableNameManager.getLiterals()
         
         #line = line.decode("ascii")
         pattern = re.compile(b"#[0-9][0-9][0-9]")
@@ -147,7 +298,7 @@ class BasicBuilder():
             # Replace symbol by its variable name.
             #
             symbolName = match
-            variableName = cbas.symbolTable.getVariableName(symbolName.decode("ascii"))
+            variableName = self.variableNameManager.getVariableName(symbolName.decode("ascii"))
             
             a = bytearray(variableName.upper(),"ascii")
             result = result.replace( symbolName,a)
@@ -158,7 +309,7 @@ class BasicBuilder():
         pattern = re.compile(b".*\}.*")
         matches = pattern.findall(line)
         for match in matches:
-            cbas.symbolTable.closeScope()
+            self.variableNameManager.closeScope()
 
         return result
 
@@ -289,8 +440,9 @@ class BasicBuilder():
         #
         #
         #
+        self.variableNameManager = self._createVariableNameManager()
 
-        globals = cbas.symbolTable.getGlobals()
+        globals = self.variableNameManager.getGlobals()
         for symbol in globals:
             line = bytearray()
 
@@ -302,13 +454,15 @@ class BasicBuilder():
             elif symbol.kind == SymbolKind.LITERAL_BOOLEAN:
                 _type = TokenTypes.BOOLEAN
 
-            variableName = cbas.symbolTable.getVariableName(symbol.placeholder)
+            # We don't ust variableName, but the
+            # function call reserves a variable name.
+            variableName = self.variableNameManager.getVariableName(symbol.placeholder)
 
             line = self.tokenizer.tokenize(_type, symbol.placeholder)
 
             line += self.tokenizer.tokenize(TokenTypes.EQ)
 
-            line += self.tokenizer.tokenize(_type, symbol.name)
+            line += self.tokenizer.tokenize(_type, symbol.code)
 
             result.append(line)
         
@@ -573,12 +727,10 @@ class BasicBuilder():
         line = bytearray()
 
 
-        #line += "dim"
         line += self.tokenizer.tokenize(TokenTypes.DIM)
 
         line += self.__beautifier
 
-        #b = node.variable.toBasic()
         handler=self.getHandler( node.variable)
         r = handler(node.variable)
         line += r[0]
@@ -586,7 +738,6 @@ class BasicBuilder():
         line += self.tokenizer.tokenize(TokenTypes.ROUNDOPEN)
 
         for p in node.dimensions:
-            #b = p.toBasic()
             handler=self.getHandler( p)
             b = handler(p)
             line += b[0]

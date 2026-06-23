@@ -155,21 +155,18 @@ class ArithmeticOptimizer(AstOptimizer):
         #
         # New type is float if one of the operants is float
         #
-        newType = "integer"
         newKind = SymbolKind.LITERAL_INTEGER
+        newType = TokenTypes.INTEGER
         if symbolLeft.kind == SymbolKind.LITERAL_FLOAT or symbolRight.kind == SymbolKind.LITERAL_FLOAT:
-            newType = "float"
             newKind = SymbolKind.LITERAL_FLOAT
+            newType = TokenTypes.FLOAT
 
         #
         # We store the result in the symbol table
         #
         symbolId = cbas.symbolTable.addSymbol(newLiteral,None,None,newKind)
 
-        if newType == "float":
-            replacement = PrimaryExpression(symbolId, ChainToken(symbolId,None,None,TokenTypes.FLOAT ) )
-        else:
-            replacement = PrimaryExpression(symbolId, ChainToken(symbolId,None,None,TokenTypes.INTEGER ) )
+        replacement = PrimaryExpression(symbolId, ChainToken(symbolId,None,None,newType ) )
 
         return replacement
 
@@ -314,7 +311,7 @@ class SyntaxCheckerV2(AstOptimizer):
     def __init__(self):
         super().__init__()
 
-    def __expectParameterCounf(self, node, min=0, max=100):
+    def __expectParameterCount(self, node, min=0, max=100):
             token = node.statement.token
             qty = len(node.parameters)
             if qty < min :
@@ -330,40 +327,40 @@ class SyntaxCheckerV2(AstOptimizer):
             token = node.statement.token
             qty = len(node.parameters)
             if token.type in[ TokenTypes.CLR, TokenTypes.NEW, TokenTypes.RESTORE, TokenTypes.RETURN, TokenTypes.ST, TokenTypes.STATUS, TokenTypes.STOP, TokenTypes.TI, TokenTypes.TI_DOLLAR, TokenTypes.TIME, TokenTypes.TIME_DOLLAR, TokenTypes.PISIGN, TokenTypes.END, TokenTypes.CONT ]:
-                self.__expectParameterCounf( node,0,0 )
+                self.__expectParameterCount( node,0,0 )
            
             elif token.type in[ TokenTypes.RUN ]:
-                self.__expectParameterCounf( node,0,1 )
+                self.__expectParameterCount( node,0,1 )
             
             elif token.type in[ TokenTypes.GOTO, TokenTypes.GOSUB, TokenTypes.CLOSE ]:
-                self.__expectParameterCounf( node,1,1 )
+                self.__expectParameterCount( node,1,1 )
             
             elif token.type in[ TokenTypes.POKE ]:
-                self.__expectParameterCounf( node,2,2 )
+                self.__expectParameterCount( node,2,2 )
                 
             elif token.type == TokenTypes.WAIT:
-                self.__expectParameterCounf( node,2,3 )
+                self.__expectParameterCount( node,2,3 )
 
             elif token.type == TokenTypes.VERIFY:
-                self.__expectParameterCounf( node,0,2 )
+                self.__expectParameterCount( node,0,2 )
 
             elif token.type in [TokenTypes.SAVE, TokenTypes.LOAD]:
-                self.__expectParameterCounf( node,0,3 )
+                self.__expectParameterCount( node,0,3 )
 
             elif token.type == TokenTypes.OPEN:
-                self.__expectParameterCounf( node,1,4 )
+                self.__expectParameterCount( node,1,4 )
 
             elif token.type == TokenTypes.LIST:
-                self.__expectParameterCounf( node,0,1 )
+                self.__expectParameterCount( node,0,1 )
 
             elif token.type == TokenTypes.GET:
-                self.__expectParameterCounf( node,1,100 )
+                self.__expectParameterCount( node,1,100 )
 
             elif token.type == TokenTypes.GET_SHARP:
-                self.__expectParameterCounf( node,2,100 )
+                self.__expectParameterCount( node,2,100 )
             
             elif token.type == TokenTypes.INPUT:
-                self.__expectParameterCounf( node,1,100 )
+                self.__expectParameterCount( node,1,100 )
 
         elif type(node) == cbas.Ast.Expressions.FunctionCallExpression:
             if len(node.parameters) != 1:

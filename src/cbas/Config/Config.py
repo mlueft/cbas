@@ -11,7 +11,6 @@ import cbas.Parser.ConfigToken
 import cbas.Ast.Expressions
 import cbas.Ast.Statements
 
-#import cbas.AstOptimizer.AstOptimizer
 import cbas.AstOptimizer.ConfigToken
 import cbas.DataStructures.TraverseMode
 
@@ -29,11 +28,8 @@ ParserConfigToken         = cbas.Parser.ConfigToken.ConfigToken
 ParserConfig              = cbas.Config.ParserConfig.ParserConfig
 ExpressionParser          = cbas.Ast.Expressions.ExpressionParser
 StatementParser           = cbas.Ast.Statements.StatementParser
-#ArithmeticOptimizer       = cbas.AstOptimizer.AstOptimizer.ArithmeticOptimizer
-#LogicOptimizer            = cbas.AstOptimizer.AstOptimizer.LogicOptimizer
 AstOptimizerConfig        = cbas.Config.AstOptimizerConfig.AstOptimizerConfig
 AstOptimizerToken         = cbas.AstOptimizer.ConfigToken.ConfigToken
-#SyntaxCheckerV2           = cbas.AstOptimizer.AstOptimizer.SyntaxCheckerV2
 TraverseMode              = cbas.DataStructures.TraverseMode.TraverseMode
 CompilerPasses            = cbas.Compiler.CompilerPasses.CompilerPasses
 
@@ -51,8 +47,6 @@ class Config():
 
     def __init__(self, configIndex):
         self.configIndex = configIndex
-
-        pass
 
     def getLexerConfig(self):
         parameters = cbas.Config.LexerConfig.Matrix.Parameters[self.configIndex]
@@ -150,7 +144,6 @@ class Config():
         keys = definitions.keys()
         for key in keys:
             if key in matrix and matrix[key][self.configIndex] == 1:
-                #print(key)
                 result.handlers.append(
                     [definitions[key]["instance"],definitions[key]["direction"]]
                 )

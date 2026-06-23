@@ -35,6 +35,8 @@ class Compiler():
         self.basicStartAddress = 2048
         self.basicLines = []
         self.configIndex = configIndex
+        self.reuseVariables = False
+        self.buildGlobals = False
 
         self.__config      = self._createConfig(configIndex)
         self.__lexer       = None # self._createLexer(configIndex)
@@ -58,6 +60,8 @@ class Compiler():
         result = BasicBuilder(configIndex)
         result.concatenateLines = self.concatenateLines
         result.beautify = self.beautify
+        result.reuseVariables = self.reuseVariables
+        result.buildGlobals = self.buildGlobals
         return result
 
     def _createLinker(self, prg=True):
@@ -126,14 +130,6 @@ class Compiler():
         cbas.log("debug ...", "debug")
         cbas.log("============================================", "debug")
         ast.debug()
-
-    def __callBackBasic(self,node,traverseMode):
-        if node.isLeaf:
-            return
-        lines = node.toBasic()
-        if lines is not None:
-            for l in lines:
-                self.basicLines.append(l)
 
     def __writeLines(self, lines, file):
         try:

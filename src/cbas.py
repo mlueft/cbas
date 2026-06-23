@@ -19,7 +19,8 @@ def showHelp():
     print( "-g    - Build global literals.")
     print( "" )
 
-def runCompiler( version, inputFile, outputFolder, objectFolder, lineNumberStart, lineNumberStep, basicStartAddress, beautify, concatenateLines):
+def runCompiler( version, inputFile, outputFolder, objectFolder, lineNumberStart, lineNumberStep,
+                 basicStartAddress, beautify, concatenateLines, reuseVariables, buildGlobals):
     compiler = Compiler(version)
     compiler.objectFolder = objectFolder
     compiler.binFolder = outputFolder
@@ -28,6 +29,8 @@ def runCompiler( version, inputFile, outputFolder, objectFolder, lineNumberStart
     compiler.basicStartAddress = basicStartAddress
     compiler.beautify = beautify
     compiler.concatenateLines = concatenateLines
+    compiler.reuseVariables = reuseVariables
+    compiler.buildGlobals = buildGlobals
     compiler.compileFile( inputFile )
 
 def main():
@@ -41,9 +44,6 @@ def main():
     objectFolder = "/home/work/cbas/obj"
     outputFolder = "/home/work/cbas/bin"
     
-    cbas.symbolTable.reuseVariables = False
-    cbas.symbolTable.buildGlobals = False
-
     #inputFile       = None
     #objectFolder    = None
     #outputFolder    = None
@@ -53,6 +53,8 @@ def main():
     basicStartAddress = 2049
     beautify          = False
     concatenateLines  = False
+    reuseVariables    = True
+    buildGlobals      = True
 
     #
     # Check CLI-Parameter
@@ -90,10 +92,10 @@ def main():
                 beautify = True
 
             elif currentArg in ("-r"):
-                cbas.symbolTable.reuseVariables = True
+                reuseVariables = True
 
             elif currentArg in ("-g"):
-                cbas.symbolTable.buildGlobals = True
+                buildGlobals = True
 
             elif currentArg in ("-h"):
                 showHelp()
@@ -135,7 +137,9 @@ def main():
     #
     # Run Compiler
     #
-    runCompiler( basicVersion, inputFile, outputFolder, objectFolder, lineNumberStart, lineNumberStep, basicStartAddress, beautify, concatenateLines )
+    runCompiler( basicVersion, inputFile, outputFolder, objectFolder,
+                 lineNumberStart, lineNumberStep, basicStartAddress,
+                 beautify, concatenateLines, reuseVariables, buildGlobals )
 
 
 
